@@ -13,7 +13,7 @@ pygame.display.set_caption("Dot Following Function Path")
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
-RED = (255, 0, 0)
+RED = (255, 0, 0) 
 
 # Define function parameters
 x_start, x_end = -10, 10  # Define the range of x values
