@@ -1,8 +1,10 @@
+from calculations.pixels_calculations import PixelsConverter
+
 class Vehicle:
     def __init__(self, xPos, yPos, speed, diameter):
         self.xPos = xPos
         self.yPos = yPos
-        self.speed = speed
+        self.speed = PixelsConverter.convert_speed_to_pixels_per_frames
         self.diameter = diameter
     
     def checkDistance(self, otherCars, world):

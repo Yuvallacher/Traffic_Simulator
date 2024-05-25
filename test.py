@@ -35,7 +35,7 @@ road = pygame.Rect(0, 300, SCREEN_WIDTH, 33)
 
 def addCars(frequency, cars):
     for lane in lanes:
-        if random.uniform(0, 1) >= 1 / frequency: 
+        if random.uniform(0, 1) >= 0.1 / frequency: 
             cars.append(Vehicle.Vehicle(-10, lane, random.uniform(0.01, 0.1), 15))
 
 
