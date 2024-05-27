@@ -6,6 +6,8 @@ class Vehicle:
         self.yPos = yPos
         self.speed = PixelsConverter.convert_speed_to_pixels_per_frames
         self.diameter = diameter
+        self.width = 15
+        self.height = 10
     
     def checkDistance(self, otherCars, world):
         front_x = self.xPos + self.diameter

@@ -39,7 +39,7 @@ while running:
     screen.fill(WHITE)
 
     # Draw function line
-    pygame.draw.lines(screen, BLUE, False, points,10)
+    pygame.draw.lines(screen, BLACK, False, points,10)
 
     # Draw dot
     pygame.draw.circle(screen, RED, (dot_x, dot_y), dot_radius)
