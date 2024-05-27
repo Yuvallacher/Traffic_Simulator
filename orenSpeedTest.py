@@ -1,13 +1,12 @@
 import pygame
-import Vehicle.Vehicle as Vehicle
+from vehicle.Vehicle import Vehicle
+from world.Point import Point
 import random
 import time
-import World.World as World
+from world.World import World
 
 SCREEN_WIDTH = 1280 
 SCREEN_HEIGHT = 720
-
-
 
 
 PIXELS_PER_METER = 5
@@ -43,16 +42,16 @@ car_rect = car_image.get_rect()
 car_rect.topleft = (0, lanes[0] - 3)
 clock = pygame.time.Clock()
 
-def drawRoad(xPos, yPos, screen):
+def drawRoad(coordinates, screen):
     
-    while xPos <= SCREEN_WIDTH:
-        pygame.draw.line(screen, WHITE, (xPos, yPos), (xPos + 5, yPos), width=2)
-        xPos += 10
+    while coordinates.x <= SCREEN_WIDTH:
+        pygame.draw.line(screen, WHITE, (coordinates.x, coordinates.y), (coordinates.x + 5, coordinates.y), width=2)
+        coordinates.x += 10
 
 while simulationRunning:
     screen.fill(WHITE)
     pygame.draw.rect(screen, GREY, road)
-    drawRoad(0, 315, screen)
+    drawRoad(Point(0, 315), screen)
     carXPosition += car_speed_ppf
     car_rect.x += car_speed_ppf
     screen.blit(car_image, car_rect)

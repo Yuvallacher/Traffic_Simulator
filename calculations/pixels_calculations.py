@@ -1,4 +1,4 @@
-from World.World import World
+from world.World import World
 
 class PixelsConverter:
     @staticmethod
