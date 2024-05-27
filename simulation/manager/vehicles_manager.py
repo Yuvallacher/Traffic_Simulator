@@ -1,4 +1,4 @@
-from Vehicle.Vehicle import Vehicle
+from vehicle.Vehicle import Vehicle
 
 class VehiclesManager:
     
