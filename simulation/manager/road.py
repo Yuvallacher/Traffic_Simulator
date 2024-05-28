@@ -1,5 +1,5 @@
 
-from point import Point
+from world.Point import Point
 from sympy import Expr
 
 class Road:

@@ -7,45 +7,86 @@ from numpy.random import normal
 class Vehicle:
     def __init__(self, location : Point, speed=60):
         self.location = location
-        self.coefficient = normal(1, 0.12)
         self.speed = PixelsConverter.convert_speed_to_pixels_per_frames(speed)
-        self.desiredSpeed = 0
-        self.width = 15
-        self.height = 10
-        self.colorIndex = random.randint(0, 4)
+        self.desiredSpeed = 0.0
     
     
     def setDesiredSpeed(self, maxSpeed : int):
         self.desiredSpeed = PixelsConverter.convert_speed_to_pixels_per_frames(self.coefficient * maxSpeed)
     
     
-    def checkDistance(self, otherCars, world : World):
-        front_of_car = self.location.x + self.width
-        car_lane = self.location.y
-        minimalDistance = 10 + world.politeness * 5
-        
-        for other_car in otherCars:
-            front_other_car_x = other_car.location.x + other_car.width
-            other_car_lane = other_car.location.y
-            if car_lane == other_car_lane:
-                if front_other_car_x > front_of_car:
-                    distance = front_other_car_x - front_of_car
-                    if distance < minimalDistance:
+    def checkDistance(self, other_vehicles, world: World):
+        front_of_vehicle = self.location.x + self.width
+        vehicle_lane = self.location.y
+        minimal_distance = 10 + world.politeness * 10
+
+        for other_vehicle in other_vehicles:
+            other_vehicle_lane = other_vehicle.location.y
+            if abs(vehicle_lane - other_vehicle_lane) <= 3:
+                back_of_other_vehicle = other_vehicle.location.x
+                front_of_other_vehicle = other_vehicle.location.x + other_vehicle.width
+                if front_of_vehicle < back_of_other_vehicle or front_of_vehicle < front_of_other_vehicle:
+                    distance = back_of_other_vehicle - front_of_vehicle
+                    if distance < minimal_distance:
                         return False
 
         return True
     
     
-    def accelerateAndBreak(self, otherCars, world : World):
-        clearSpaceAhead = self.checkDistance(otherCars, world)
-        if clearSpaceAhead:
-            if self.speed + PixelsConverter.convert_speed_to_pixels_per_frames(1 + self.speed * 0.1) <= self.desiredSpeed:
-                self.speed += PixelsConverter.convert_speed_to_pixels_per_frames(1 + self.speed * 0.1)
+    def accelerateAndBreak(self, other_vehicles, world: World):
+        max_acceleration = 2  
+        max_deceleration = -5 
+
+        weight_factor = 1.5 if self.weight > 5 else 1.0
+
+        acceleration_factor = max_acceleration / self.weight
+        deceleration_factor = (max_deceleration * weight_factor) / self.weight
+
+        cruising_speed_factor = 0.5 
+        cruising_speed = self.desiredSpeed * cruising_speed_factor
+
+        clear_space_ahead = self.checkDistance(other_vehicles, world)
+        if clear_space_ahead:
+            acceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(acceleration_factor)
+            if self.speed + acceleration_speed <= self.desiredSpeed:
+                self.speed += acceleration_speed
             else:
                 self.speed = self.desiredSpeed
         else:
-            if self.speed - PixelsConverter.convert_speed_to_pixels_per_frames(3) > 0:
-                self.speed -= PixelsConverter.convert_speed_to_pixels_per_frames(3)
+            if self.speed > cruising_speed:
+                deceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(deceleration_factor)
+                if self.speed + deceleration_speed > cruising_speed:
+                    self.speed += deceleration_speed
+                else:
+                    self.speed = cruising_speed
             else:
-                self.speed = 0
+                self.speed = cruising_speed
+
+
+
+
+
+#---------------------Car---------------------#
+
+class Car(Vehicle):
+    def __init__(self, location : Point, speed=60):
+        self.weight = 2
+        self.width = 15
+        self.height = 10
+        self.coefficient = normal(1, 0.12)
+        self.colorIndex = random.randint(0, 4)
+        super().__init__(location, speed)
     
+    
+    
+    
+    
+    
+#--------------------Truck--------------------#
+class Truck(Vehicle):
+    def __init__(self, location : Point, speed=60):
+        self.weight = 15
+        self.width = 50
+        self.height = 15
+        self.coefficient = normal(0.8, 0.09)
+        super().__init__(location, speed)

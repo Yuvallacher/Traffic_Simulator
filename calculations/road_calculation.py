@@ -2,7 +2,7 @@ import sympy as sp
 from sympy import Expr
 from world.World import World
 from simulation.manager.road import Road
-from point import Point
+from world.Point import Point
 
 class RoadCalculator:
     NUM_POINTS = 1000  # Number of points to calculate along the function
