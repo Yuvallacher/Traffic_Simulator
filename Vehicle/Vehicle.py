@@ -22,8 +22,8 @@ class Vehicle:
 
         for other_vehicle in other_vehicles:
             other_vehicle_lane = other_vehicle.location.y
-            if abs(vehicle_lane - other_vehicle_lane) <= 3:
-                back_of_other_vehicle = other_vehicle.location.x
+            if abs(vehicle_lane - other_vehicle_lane) <= 5: #TODO: add checkLane method to Road class? it tells my lane based on my position
+                back_of_other_vehicle = other_vehicle.location.x - 3
                 front_of_other_vehicle = other_vehicle.location.x + other_vehicle.width
                 if front_of_vehicle < back_of_other_vehicle or front_of_vehicle < front_of_other_vehicle:
                     distance = back_of_other_vehicle - front_of_vehicle
@@ -37,12 +37,12 @@ class Vehicle:
         max_acceleration = 2  
         max_deceleration = -5 
 
-        weight_factor = 1.5 if self.weight > 5 else 1.0
+        #weight_factor = 1.5 if self.weight > 5 else 1.0
 
         acceleration_factor = max_acceleration / self.weight
-        deceleration_factor = (max_deceleration * weight_factor) / self.weight
+        deceleration_factor = max_deceleration / self.weight
 
-        cruising_speed_factor = 0.5 
+        cruising_speed_factor = 0.5 #TODO: shouldn't be a literal but related to the next vehicle's speed
         cruising_speed = self.desiredSpeed * cruising_speed_factor
 
         clear_space_ahead = self.checkDistance(other_vehicles, world)
@@ -71,8 +71,8 @@ class Vehicle:
 class Car(Vehicle):
     def __init__(self, location : Point, speed=60):
         self.weight = 2
-        self.width = 15
-        self.height = 10
+        self.width = 30
+        self.height = 20
         self.coefficient = normal(1, 0.12)
         self.colorIndex = random.randint(0, 4)
         super().__init__(location, speed)
@@ -86,7 +86,7 @@ class Car(Vehicle):
 class Truck(Vehicle):
     def __init__(self, location : Point, speed=60):
         self.weight = 15
-        self.width = 50
-        self.height = 15
+        self.width = 65
+        self.height = 20
         self.coefficient = normal(0.8, 0.09)
         super().__init__(location, speed)

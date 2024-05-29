@@ -48,9 +48,9 @@ def updateCarPos(cars: list[Vehicle], simulationWorld : World):
 def drawCars(vehicles: list[Vehicle], screen):
     for vehicle in vehicles:
         if isinstance(vehicle, Car):
-            screen.blit(carPictures[vehicle.colorIndex], (vehicle.location.x, vehicle.location.y - 3))
+            screen.blit(carPictures[vehicle.colorIndex], (vehicle.location.x, vehicle.location.y - 7))
         else:
-            screen.blit(red_truck_image, (vehicle.location.x, vehicle.location.y - 4))
+            screen.blit(red_truck_image, (vehicle.location.x, vehicle.location.y - 8))
 
 
 
@@ -60,7 +60,7 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 vehiclesManager = VehiclesManager(NUMBER_OF_CARS)
 
 #world creation
-simulationWorld = World(maxSpeed=100, frequency=10, politeness=5)
+simulationWorld = World(maxSpeed=100, frequency=10, politeness=4)
 simulationRunning = True
 
 
