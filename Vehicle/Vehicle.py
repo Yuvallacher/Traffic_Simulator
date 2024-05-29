@@ -15,7 +15,7 @@ class Vehicle:
         self.desiredSpeed = PixelsConverter.convert_speed_to_pixels_per_frames(self.coefficient * maxSpeed)
     
     
-    def checkDistance(self, other_vehicles, world: World):
+    def checkDistance(self, other_vehicles : list['Vehicle'], world: World):
         front_of_vehicle = self.location.x + self.width
         vehicle_lane = self.location.y
         minimal_distance = 10 + world.politeness * 10
@@ -33,7 +33,16 @@ class Vehicle:
         return True
     
     
-    def accelerateAndBreak(self, other_vehicles, world: World):
+    def checkSurroundings(self, other_vehicles : list['Vehicle'], world: World):
+        front_of_vehicle = self.location.x + self.width
+        vehicle_lane = self.location.y
+        minimal_distance = 10 + world.politeness * 10
+        #TODO: return here after finishing Road and Lane classes
+        
+        
+    
+    
+    def accelerateAndBreak(self, other_vehicles : list['Vehicle'], world: World):
         max_acceleration = 2  
         max_deceleration = -5 
 
