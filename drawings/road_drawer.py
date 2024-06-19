@@ -1,8 +1,8 @@
 import pygame
-from simulation.manager.road import Road
-from World.World import World
+from simulation.world.road import Road
+from simulation.world.World import World
 from calculations.road_calculation import RoadCalculator
-from point import Point
+from simulation.world.Point import Point
 import sympy as sp
 
 class RoadDrawer:

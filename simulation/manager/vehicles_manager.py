@@ -1,10 +1,12 @@
-from world.World import World
-from world.Point import Point
-from vehicle.Vehicle import Vehicle
-from vehicle.Vehicle import Car
-from vehicle.Vehicle import Truck
-from simulation.manager.road import Road
+from simulation.world.World import World
+from simulation.world.Point import Point
+from simulation.vehicle.Vehicle import Vehicle
+from simulation.vehicle.Vehicle import Car
+from simulation.vehicle.Vehicle import Truck
+from simulation.world.road import Road
 import random
+
+TRUCK_PROBABILITY = 0.1
 
 class VehiclesManager:
     
@@ -19,21 +21,19 @@ class VehiclesManager:
                 for lane in lanes:
                     space_available = True
                     for vehicle in self.vehicles:
-                        if abs(vehicle.location.y - lane.y) < 5 and vehicle.location.x <= 50:
+                        if vehicle.lane == lanes.index(lane) and vehicle.location.x <= 100:
                             space_available = False
                             break
                     if space_available:
+                        coordinates = Point(-simulationWorld.maxSpeed, lane.y)
+                        new_vehicle_lane = simulationWorld.road.getLane(coordinates)
                         car_probability = random.uniform(0, 1)
-                        if car_probability >= 0.05:
-                            newCar = Car(Point(-simulationWorld.maxSpeed, lane.y), speed=simulationWorld.maxSpeed)
-                            newCar.setDesiredSpeed(simulationWorld.maxSpeed)
-                            self.vehicles.append(newCar)
-                            break
+                        if car_probability >= TRUCK_PROBABILITY:
+                            newVehicle = Car(coordinates, new_vehicle_lane, speed=simulationWorld.maxSpeed)
                         else:
-                            newTruck = Truck(Point(-simulationWorld.maxSpeed, lane.y), speed=simulationWorld.maxSpeed)
-                            newTruck.setDesiredSpeed(simulationWorld.maxSpeed)
-                            self.vehicles.append(newTruck)
-                            break
+                            newVehicle = Truck(coordinates, new_vehicle_lane ,speed=simulationWorld.maxSpeed)
+                        newVehicle.setDesiredSpeed(simulationWorld.maxSpeed)
+                        self.vehicles.append(newVehicle)
                         
                         
     def removeCars(self, end : int):

@@ -1,7 +1,7 @@
 import sympy as sp
 from sympy import Expr
 from world.World import World
-from simulation.manager.road import Road
+from world.road import Road
 from world.Point import Point
 
 class RoadCalculator:

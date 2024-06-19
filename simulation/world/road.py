@@ -1,5 +1,4 @@
-
-from world.Point import Point
+from simulation.world.Point import Point
 
 class Road:
     def __init__(self, starting_position : Point, ending_position : Point, number_of_lanes : int, lane_width):
@@ -20,6 +19,13 @@ class Road:
         self.lanes.remove(self.lanes[self.numer_of_lanes - 1])
         self.numer_of_lanes -= 1
         #TODO: delete cars on the removed lane
+    
+    def getLane(self, coordinates : Point):
+        lane_y = coordinates.y
+        for lane in self.lanes:
+            if lane_y == lane.y:
+                return self.lanes.index(lane)
+        return -1
     
     class Lane:
         def __init__(self, lane_width, starting_position : Point, ending_position : Point):

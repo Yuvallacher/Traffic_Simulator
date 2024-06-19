@@ -1,13 +1,11 @@
 import pygame
-from vehicle.Vehicle import Vehicle
-from vehicle.Vehicle import Car
-from vehicle.Vehicle import Truck
-from world.Point import Point
-import random
-import time
-from simulation.manager.road import Road
-from world.World import World
+from simulation.vehicle.Vehicle import Vehicle
+from simulation.vehicle.Vehicle import Car
+from simulation.world.Point import Point
+from simulation.world.road import Road
+from simulation.world.World import World
 from simulation.manager.vehicles_manager import VehiclesManager
+from simulation.data.DataManager import DataManager
 
 
 SCREEN_WIDTH = 1280 
@@ -16,10 +14,14 @@ SCREEN_HEIGHT = 720
 PIXELS_PER_METER = 5
 FPS = 60
 
-NUMBER_OF_CARS = 50
+NUMBER_OF_CARS = 100
 
 LANE_SIZE = 20
 NUMBER_OF_LANES = 5
+
+MAX_SPEED = 100
+FREQUENCY = 10
+POLITENESS = 1
 
 #colors
 GREY = (153, 163, 164)
@@ -47,9 +49,9 @@ def drawRoad(road : Road, screen):
                 coordinates.x += 10
 
 
-def updateCarPos(vehicles: list[Vehicle], simulationWorld : World):
+def updateCarPos(vehicles: list[Vehicle], simulationWorld : World, dataManager : DataManager):
     for vehicle in vehicles:
-        vehicle.accelerateAndBreak(vehicles, simulationWorld)
+        vehicle.accelerateAndBreak(vehicles, simulationWorld, dataManager)
         vehicle.location.x += vehicle.speed
         
 
@@ -57,23 +59,29 @@ def drawCars(vehicles: list[Vehicle], screen):
     for vehicle in vehicles:
         if isinstance(vehicle, Car):
             screen.blit(carPictures[vehicle.colorIndex], (vehicle.location.x, vehicle.location.y - 7))
+            #carPictures[vehicle.colorIndex].get_rect(topleft=(vehicle.location.x, vehicle.location.y - 7))     transform blit to rect so we can work woth points
         else:
             screen.blit(red_truck_image, (vehicle.location.x, vehicle.location.y - 8))
+            #red_truck_image.get_rect(topleft=(vehicle.location.x, vehicle.location.y - 8))
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
+
 vehiclesManager = VehiclesManager(NUMBER_OF_CARS)
-
-#world creation
-simulationWorld = World(maxSpeed=100, frequency=10, politeness=4)
-simulationRunning = True
-
 
 #roads 
 road = Road(Point(0, 300), Point(SCREEN_WIDTH, 300), NUMBER_OF_LANES, LANE_SIZE)
 
+#world creation
+simulationWorld = World(maxSpeed=MAX_SPEED, frequency=FREQUENCY, politeness=POLITENESS, road=road)
+simulationRunning = True
+
 #clock
 clock = pygame.time.Clock()
+
+#dataManager
+dataManager = DataManager(filename='simulation_data.xlsx', export_interval=2)
+next_stat_update = pygame.time.get_ticks() + dataManager.export_interval * 1000  # Convert seconds to milliseconds
 
 
 while simulationRunning:
@@ -81,9 +89,14 @@ while simulationRunning:
     drawRoad(road, screen)
     
     vehiclesManager.addCar(road.lanes, simulationWorld)
-    updateCarPos(vehiclesManager.vehicles, simulationWorld)
+    updateCarPos(vehiclesManager.vehicles, simulationWorld, dataManager)
     drawCars(vehiclesManager.vehicles, screen)
     vehiclesManager.removeCars(SCREEN_WIDTH)
+    
+    current_time = pygame.time.get_ticks()
+    if current_time >= next_stat_update:
+        dataManager.update_stats(vehiclesManager.vehicles)
+        next_stat_update = current_time + dataManager.export_interval * 1000
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
