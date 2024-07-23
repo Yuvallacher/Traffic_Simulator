@@ -1,15 +1,21 @@
 import pygame
-import vehicle.Vehicle as Vehicle
+from calculations.straight_road import straightRoad
+from simulation.vehicle.Vehicle import Vehicle
+from simulation.world.Point import Point
 import random
 import time
-import world.World as World
-from world.Point import Point
+from simulation.world.World import World
 
-SCREEN_WIDTH = 1080
+SCREEN_WIDTH = 1280 
 SCREEN_HEIGHT = 720
 
 
-world = World.World(maxSpeed=50, frequency=1, politeness=3.5)
+PIXELS_PER_METER = 5
+FPS = 60
+car_speed_kmh = 60
+car_speed_mps = car_speed_kmh * 1000 / 3600
+car_speed_ppf = car_speed_mps * PIXELS_PER_METER / FPS
+
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 simulationRunning = True
@@ -22,53 +28,46 @@ BLACK = (0, 0, 0)
 #lanes
 lanes = [307.5, 324]
 
-#cars
-
-carXPosition = -10
-carYPosition = lanes[0]
-cars = []
-
 #roads 
-road = pygame.Rect(0, 300, SCREEN_WIDTH, 33)
+#road = pygame.Rect(0, 300, SCREEN_WIDTH, 33)
+road = pygame.image.load('straightRoadPictures\\straightRoad.png')
+road = pygame.transform.scale(road, (1280,150))
+testRoad = straightRoad(2, (1280, 150))
+testRoad.setRoadFunctionAsY(10)
 
-def addCars(frequency, cars):
-    for lane in lanes:
-        if random.uniform(0, 1) >= 1 / (frequency * 10): 
-            newCar = Vehicle.Vehicle(Point(-10, lane))
-            newCar.setDesiredSpeed(world.maxSpeed)
-            cars.append(newCar)
-            
+carXPosition = 0
+#carYPosition = lanes[0]- 3
+carYPosition = lanes[0] - 3
 
+car_image = pygame.image.load('carPictures\\redCar.png')
+car_image = pygame.transform.scale(car_image,(25,15))
+car_rect = car_image.get_rect()
 
+car_rect.topleft = (0, lanes[0] - 3)
+clock = pygame.time.Clock()
 
-def drawRoad(xPos, yPos, screen):
+def drawRoad(coordinates, screen):
     
-    while xPos <= SCREEN_WIDTH:
-        pygame.draw.line(screen, WHITE, (xPos, yPos), (xPos + 5, yPos), width=2)
-        xPos += 10
-
-
+    while coordinates.x <= SCREEN_WIDTH:
+        pygame.draw.line(screen, WHITE, (coordinates.x, coordinates.y), (coordinates.x + 5, coordinates.y), width=2)
+        coordinates.x += 10
 
 while simulationRunning:
     screen.fill(WHITE)
-    pygame.draw.rect(screen, GREY, road)
-    drawRoad(0, 315, screen)
-    pygame.draw.circle(screen, BLACK, (carXPosition, carYPosition), 7.5)
+    screen.blit(testRoad.road, (0,200))
+    #pygame.draw.rect(screen, GREY, road)
+    #drawRoad(Point(0, 315), screen)
+    carXPosition = (testRoad.getPoint(car_speed_ppf + carXPosition)).x
+    car_rect.x = (testRoad.getPoint(car_speed_ppf + carXPosition)).x
+    
+    screen.blit(car_image, car_rect)
+    pygame.draw.rect(screen, BLACK, (carXPosition, carYPosition,15, 10))
+    print(f"Car rect x: {car_rect.x}, Rectangle x: {carXPosition}")
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             simulationRunning = False
-    closestCar = 800
-    for movingCar in cars:
-        carXPosition = float(movingCar.location.x)
-        carYPosition = float(movingCar.location.y)
-        movingCar.accelerateAndBreak(cars, world)
-        movingCar.location.x += movingCar.speed
-        pygame.draw.circle(screen, BLACK, (carXPosition, carYPosition), 7.5)
-        closestCar = min(closestCar, movingCar.location.x)
-        if movingCar.location.x >= SCREEN_WIDTH:
-            cars.remove(movingCar)
-    if closestCar > 20:
-        addCars(world.frequency, cars)
     pygame.display.update()
+    clock.tick(FPS)
 
-pygame.QUIT()
+pygame.quit()

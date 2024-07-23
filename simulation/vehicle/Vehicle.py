@@ -71,7 +71,11 @@ class Vehicle:
         
         return surroundings
         
-        
+
+    def makeNextDesicion(self, obsticles: list):
+        #implement lane swap
+        # implement desicion
+        pass 
     
     
     def accelerateAndBreak(self, other_vehicles : list['Vehicle'], world: World, dataManager : DataManager):

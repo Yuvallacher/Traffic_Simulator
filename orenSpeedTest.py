@@ -1,9 +1,9 @@
 import pygame
-from vehicle.Vehicle import Vehicle
-from world.Point import Point
+from simulation.vehicle.Vehicle import Vehicle
+from simulation.world.Point import Point
 import random
 import time
-from world.World import World
+from simulation.world.World import World
 
 SCREEN_WIDTH = 1280 
 SCREEN_HEIGHT = 720
@@ -35,7 +35,7 @@ carXPosition = 0
 #carYPosition = lanes[0]- 3
 carYPosition = lanes[0] - 3
 
-car_image = pygame.image.load('car.png')
+car_image = pygame.image.load('carPictures\\redCar.png')
 car_image = pygame.transform.scale(car_image,(25,15))
 car_rect = car_image.get_rect()
 
