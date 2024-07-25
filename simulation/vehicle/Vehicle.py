@@ -34,8 +34,8 @@ class Vehicle:
                 if self.lane == other_vehicle.lane:
                     back_of_other_vehicle = other_vehicle.location.x - 3
                     front_of_other_vehicle = other_vehicle.location.x + other_vehicle.length
+                    # start of accidents detection
                     if front_of_vehicle >= back_of_other_vehicle + 3 and back_of_vehicle <= front_of_other_vehicle:
-                        #if self.inAccident != other_vehicle.inAccident or (not self.inAccident and not other_vehicle.inAccident):
                         if not (self.inAccident and other_vehicle.inAccident):
                             dataManager.log_accident(type(self).__name__, type(other_vehicle).__name__, PixelsConverter.convert_pixels_per_frames_to_speed(self.speed), PixelsConverter.convert_pixels_per_frames_to_speed(other_vehicle.speed))
                         self.inAccident = True
@@ -43,6 +43,7 @@ class Vehicle:
                         other_vehicle.inAccident = True
                         other_vehicle.speed = 0
                         return False
+                    # end of accident detection
                     if front_of_vehicle < back_of_other_vehicle or front_of_vehicle < front_of_other_vehicle:
                         distance = back_of_other_vehicle - front_of_vehicle
                         if distance < minimal_distance:
@@ -60,13 +61,14 @@ class Vehicle:
         minimal_distance = 10 + politeness * 10
         
         for other_vehicle in other_vehicles:
-            if self.lane == other_vehicle.lane:
-                back_of_other_vehicle = other_vehicle.location.x - 3
-                front_of_other_vehicle = other_vehicle.location.x + other_vehicle.length
-                if front_of_vehicle < back_of_other_vehicle or front_of_vehicle < front_of_other_vehicle:
-                    distance = back_of_other_vehicle - front_of_vehicle
-                    if distance < minimal_distance:
-                        surroundings['vehicles'].append(other_vehicle)
+            if self != other_vehicle:
+                if self.lane == other_vehicle.lane:
+                    back_of_other_vehicle = other_vehicle.location.x - 3
+                    front_of_other_vehicle = other_vehicle.location.x + other_vehicle.length
+                    if front_of_vehicle < back_of_other_vehicle or front_of_vehicle < front_of_other_vehicle:
+                        distance = back_of_other_vehicle - front_of_vehicle
+                        if distance < minimal_distance:
+                            surroundings['vehicles'].append(other_vehicle)
 
         
         return surroundings

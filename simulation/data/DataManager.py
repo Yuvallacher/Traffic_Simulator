@@ -6,7 +6,7 @@ pd.set_option('display.precision', 2)
 from calculations.pixels_calculations import PixelsConverter
 
 class DataManager:
-    def __init__(self, filename='simulation_data.xlsx', export_interval=5):
+    def __init__(self, filename='simulation_data.xlsx', export_interval=2):
         self.filename = filename
         self.export_interval = export_interval
         self.stats_data = pd.DataFrame(columns=['Time Stamp', 'Average Speed', 'Density'])

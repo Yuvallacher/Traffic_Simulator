@@ -92,7 +92,7 @@ while simulationRunning:
     updateCarPos(vehiclesManager.vehicles, simulationWorld, dataManager)
     drawCars(vehiclesManager.vehicles, screen)
     vehiclesManager.removeCars(SCREEN_WIDTH)
-    
+
     current_time = pygame.time.get_ticks()
     if current_time >= next_stat_update:
         dataManager.update_stats(vehiclesManager.vehicles)
