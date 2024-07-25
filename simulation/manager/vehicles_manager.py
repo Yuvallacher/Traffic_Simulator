@@ -1,9 +1,10 @@
 from simulation.world.World import World
-from simulation.world.Point import Point
+#from simulation.world.Point import Point
 from simulation.vehicle.Vehicle import Vehicle
 from simulation.vehicle.Vehicle import Car
 from simulation.vehicle.Vehicle import Truck
 from simulation.world.road import Road
+from pygame.math import Vector2
 import random
 
 TRUCK_PROBABILITY = 0.1
@@ -25,7 +26,8 @@ class VehiclesManager:
                             space_available = False
                             break
                     if space_available:
-                        coordinates = Point(-simulationWorld.maxSpeed, lane.y)
+                        coordinates = Vector2(-simulationWorld.maxSpeed, lane.y) # TODO think how to move to start of road 
+                        #coordinates = Point(-simulationWorld.maxSpeed, lane.y)
                         new_vehicle_lane = simulationWorld.road.getLane(coordinates)
                         car_probability = random.uniform(0, 1)
                         if car_probability >= TRUCK_PROBABILITY:

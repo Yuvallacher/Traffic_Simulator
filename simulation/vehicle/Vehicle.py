@@ -1,10 +1,11 @@
 from calculations.pixels_calculations import PixelsConverter
 from simulation.data.DataManager import DataManager
-from simulation.world.Point import Point
+#from simulation.world.Point import Point
 from simulation.world.World import World
 from simulation.world.World import Road
 import random
 from numpy.random import normal
+from pygame.math import Vector2
 
 CAR_AVG_SPEED = 1
 CAR_STANDARD_DEVIATION = 0.12
@@ -12,13 +13,24 @@ TRUCK_AVG_SPEED = 0.8
 TRUCK_STANDARD_DEVIATION = 0.09
 
 class Vehicle:
-    def __init__(self, location : Point, lane : int, speed=60):
+    def __init__(self, location : Vector2, lane : int, speed=60):
         self.location = location
         self.speed = PixelsConverter.convert_speed_to_pixels_per_frames(speed)
         self.desiredSpeed = 0.0
         self.lane = lane        # the lane's index in lanes[] variable of the road
+        self.targetPositionIndex = 0
         self.inAccident = False
-    
+
+    # Function to move the object towards the next point in the path
+    def updateVehicleLocation(self, target_pos : Vector2, speed):
+        direction = target_pos - self.location
+        distance = direction.length() # TODO add case for speed == 0?
+        if distance > speed:
+            direction.scale_to_length(speed)
+            self.location += direction
+        else:
+            self.location.update(target_pos)
+     
     
     def setDesiredSpeed(self, maxSpeed : int):
         self.desiredSpeed = PixelsConverter.convert_speed_to_pixels_per_frames(self.coefficient * maxSpeed)
@@ -103,14 +115,16 @@ class Vehicle:
                         self.speed = cruising_speed
                 else:
                     self.speed = cruising_speed
-
+            
+        self.updateVehicleLocation(_, self.speed) # TODO add target position somehow
+        
 
 
 
 
 #---------------------Car---------------------#
 class Car(Vehicle):
-    def __init__(self, location : Point, lane : int, speed=60):
+    def __init__(self, location : Vector2, lane : int, speed=60):
         self.weight = 2
         self.length = 30
         self.width = 20
@@ -125,7 +139,7 @@ class Car(Vehicle):
     
 #--------------------Truck--------------------#
 class Truck(Vehicle):
-    def __init__(self, location : Point, lane : int, speed=60):
+    def __init__(self, location : Vector2, lane : int, speed=60):
         self.weight = 15
         self.length = 65
         self.width = 20
