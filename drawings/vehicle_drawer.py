@@ -1,6 +1,8 @@
 import pygame
 from simulation.vehicle.Vehicle import Car
 from simulation.vehicle.Vehicle import Vehicle
+from pygame import Surface
+import random
 
 class VehicleDrawer:
 
@@ -13,10 +15,26 @@ class VehicleDrawer:
 
     red_truck_image = pygame.transform.scale(pygame.image.load('carPictures\\redTruck.png'), (60, 17))
 
-    staticmethod
-    def draw_vehicles(self, vehicles: list[Vehicle], screen):
+    @staticmethod
+    def get_car_image() -> Surface:
+        index = random.randint(0,4)
+        return  VehicleDrawer.carPictures[index]
+    
+    @staticmethod
+    def get_truck_image() -> Surface:
+        return VehicleDrawer.red_truck_image
+
+    # staticmethod
+    # def draw_vehicles(self, vehicles: list[Vehicle], screen):
+    #     for vehicle in vehicles:
+    #         if isinstance(vehicle, Car):
+    #             screen.blit(self.carPictures[vehicle.colorIndex], (vehicle.location.x, vehicle.location.y - 7))
+    #         else:
+    #             screen.blit(self.red_truck_image, (vehicle.location.x, vehicle.location.y - 8))
+
+
+    @staticmethod
+    def draw_vehicles(vehicles : list[Vehicle], screen):
         for vehicle in vehicles:
-            if isinstance(vehicle, Car):
-                screen.blit(self.carPictures[vehicle.colorIndex], (vehicle.location.x, vehicle.location.y - 7))
-            else:
-                screen.blit(self.red_truck_image, (vehicle.location.x, vehicle.location.y - 8))
+            screen.blit(vehicle.image, vehicle.rect.topleft)
+            

@@ -5,6 +5,8 @@ from simulation.vehicle.Vehicle import Car
 from simulation.vehicle.Vehicle import Truck
 from simulation.world.road import Road
 from pygame.math import Vector2
+from pygame import Surface
+from drawings.vehicle_drawer import VehicleDrawer
 import random
 
 TRUCK_PROBABILITY = 0.1
@@ -23,7 +25,7 @@ class VehiclesManager:
         for direction in allLanesInRoad:
             for lane in direction:
                 if len(self.vehicles) < self.maxNumOfCars:
-                    if random.uniform(0, 1) >= 1 / (simulationWorld.frequency * 10):
+                    if random.uniform(0, 1) >= 1 / (simulationWorld.FREQUENCY * 10):
                         space_available = True
                         for vehicle in self.vehicles:
                             if vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.laneIndex == direction.index(lane) and vehicle.location.distance_to(lane.startingPoint) <= 100:
@@ -32,15 +34,18 @@ class VehiclesManager:
                                 break
                         if space_available:
                             vehicleCoordinates = lane.path[0]
+                            driveAngle = lane.path[1] - vehicleCoordinates
                             #coordinates = Vector2(-simulationWorld.maxSpeed, lane.y) # TODO think how to move to start of road 
                             directionIndex = allLanesInRoad.index(direction)
                             newVehicleLane = direction.index(lane)
                             car_probability = random.uniform(0, 1)
                             if car_probability >= TRUCK_PROBABILITY:
-                                newVehicle = Car(vehicleCoordinates, directionIndex, newVehicleLane, speed=simulationWorld.maxSpeed)
+                                image = VehicleDrawer.get_car_image()
+                                newVehicle = Car(vehicleCoordinates, directionIndex, newVehicleLane, driveAngle, image, speed=simulationWorld.MAX_SPEED)
                             else:
-                                newVehicle = Truck(vehicleCoordinates, directionIndex, newVehicleLane ,speed=simulationWorld.maxSpeed)
-                            newVehicle.setDesiredSpeed(simulationWorld.maxSpeed)
+                                image = VehicleDrawer.get_truck_image()
+                                newVehicle = Truck(vehicleCoordinates, directionIndex, newVehicleLane, driveAngle, image, speed=simulationWorld.MAX_SPEED)
+                            newVehicle.setDesiredSpeed(simulationWorld.MAX_SPEED)
                             self.vehicles.append(newVehicle)
                         
                         

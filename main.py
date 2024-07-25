@@ -17,7 +17,7 @@ simulationRunning = True
 
 def updateCarPos(vehicles: list[Vehicle], simulationWorld : World, dataManager : DataManager): #TODO probably move to a different place
     for vehicle in vehicles:
-        vehicle.accelerateAndBreak(vehicles, simulationWorld, dataManager)
+        vehicle.accelerateAndBreak(vehicles, simulationWorld, dataManager, road)
     
 
 screen = pygame.display.set_mode((simulationWorld.SCREEN_WIDTH, simulationWorld.SCREEN_HEIGHT))
@@ -40,10 +40,10 @@ while simulationRunning:
     VehicleDrawer.draw_vehicles(vehiclesManager.vehicles, screen)
     vehiclesManager.remove_vehicles(road.allLanesInRoad)
 
-    current_time = pygame.time.get_ticks()
-    if current_time >= next_stat_update:
-        dataManager.update_stats(vehiclesManager.vehicles)
-        next_stat_update = current_time + dataManager.export_interval * 1000
+    # current_time = pygame.time.get_ticks()
+    # if current_time >= next_stat_update:
+    #     dataManager.update_stats(vehiclesManager.vehicles)
+    #     next_stat_update = current_time + dataManager.export_interval * 1000
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
