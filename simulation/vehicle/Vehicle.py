@@ -13,15 +13,16 @@ TRUCK_AVG_SPEED = 0.8
 TRUCK_STANDARD_DEVIATION = 0.09
 
 class Vehicle:
-    def __init__(self, location : Vector2, lane : int, speed=60):
+    def __init__(self, location : Vector2, directionIndex : int, laneIndex : int, speed=60):
         self.location = location
         self.speed = PixelsConverter.convert_speed_to_pixels_per_frames(speed)
         self.desiredSpeed = 0.0
-        self.lane = lane        # the lane's index in lanes[] variable of the road
+        self.directionIndex = directionIndex
+        self.laneIndex = laneIndex
         self.targetPositionIndex = 0
         self.inAccident = False
+        
 
-    # Function to move the object towards the next point in the path
     def updateVehicleLocation(self, target_pos : Vector2, speed):
         direction = target_pos - self.location
         distance = direction.length() # TODO add case for speed == 0?
@@ -30,6 +31,7 @@ class Vehicle:
             self.location += direction
         else:
             self.location.update(target_pos)
+            self.targetPositionIndex += 1 #TODO check what happens when a vehicle gets to the end of the lane. theoretically speaking, the vehicle should get removed
      
     
     def setDesiredSpeed(self, maxSpeed : int):
@@ -46,8 +48,8 @@ class Vehicle:
                 if self.lane == other_vehicle.lane:
                     back_of_other_vehicle = other_vehicle.location.x - 3
                     front_of_other_vehicle = other_vehicle.location.x + other_vehicle.length
+                    # start of accidents detection
                     if front_of_vehicle >= back_of_other_vehicle + 3 and back_of_vehicle <= front_of_other_vehicle:
-                        #if self.inAccident != other_vehicle.inAccident or (not self.inAccident and not other_vehicle.inAccident):
                         if not (self.inAccident and other_vehicle.inAccident):
                             dataManager.log_accident(type(self).__name__, type(other_vehicle).__name__, PixelsConverter.convert_pixels_per_frames_to_speed(self.speed), PixelsConverter.convert_pixels_per_frames_to_speed(other_vehicle.speed))
                         self.inAccident = True
@@ -55,6 +57,7 @@ class Vehicle:
                         other_vehicle.inAccident = True
                         other_vehicle.speed = 0
                         return False
+                    # end of accident detection
                     if front_of_vehicle < back_of_other_vehicle or front_of_vehicle < front_of_other_vehicle:
                         distance = back_of_other_vehicle - front_of_vehicle
                         if distance < minimal_distance:
@@ -63,7 +66,10 @@ class Vehicle:
         return True
     
     
-    def checkSurroundings(self, other_vehicles : list['Vehicle'], road : Road, politeness : int):
+    def get_all_harazds_around_vehicle(self, other_vehicles : list['Vehicle'], road : Road, politeness : int) -> dict:
+        """
+        The vehicle scans its sorroundings for hazards, oncoming traffic, and other variables that can influence the driver's decision
+        """
         surroundings = {}
         surroundings['vehicles'] = []
         #TODO: more checks for surroundings like hazards, turns, etc.
@@ -72,25 +78,30 @@ class Vehicle:
         minimal_distance = 10 + politeness * 10
         
         for other_vehicle in other_vehicles:
-            if self.lane == other_vehicle.lane:
-                back_of_other_vehicle = other_vehicle.location.x - 3
-                front_of_other_vehicle = other_vehicle.location.x + other_vehicle.length
-                if front_of_vehicle < back_of_other_vehicle or front_of_vehicle < front_of_other_vehicle:
-                    distance = back_of_other_vehicle - front_of_vehicle
-                    if distance < minimal_distance:
-                        surroundings['vehicles'].append(other_vehicle)
+            if self != other_vehicle:
+                if self.lane == other_vehicle.lane:
+                    back_of_other_vehicle = other_vehicle.location.x - 3
+                    front_of_other_vehicle = other_vehicle.location.x + other_vehicle.length
+                    if front_of_vehicle < back_of_other_vehicle or front_of_vehicle < front_of_other_vehicle:
+                        distance = back_of_other_vehicle - front_of_vehicle
+                        if distance < minimal_distance:
+                            surroundings['vehicles'].append(other_vehicle)
 
         
         return surroundings
         
 
-    def makeNextDesicion(self, obsticles: list):
-        #implement lane swap
-        # implement desicion
+    def makeNextDesicion(self, obstacles: list):
+        #TODO implement lane swap
+        #TODO implement decision
         pass 
     
     
-    def accelerateAndBreak(self, other_vehicles : list['Vehicle'], world: World, dataManager : DataManager):
+    def accelerateAndBreak(self, other_vehicles : list['Vehicle'], world: World, dataManager : DataManager, road : Road):
+        """
+        Caculates and updates a vehicle's speed according to the road's conditions - traffic lights, hazards, etc.
+        Then updates the vehicle's position based on its new speed
+        """
         max_acceleration = 2  
         max_deceleration = -5 
 
@@ -119,8 +130,9 @@ class Vehicle:
                         self.speed = cruising_speed
                 else:
                     self.speed = cruising_speed
-            
-        self.updateVehicleLocation(_, self.speed) # TODO add target position somehow
+        
+        nextTargetPosition = road.get_next_target_position(self.directionIndex, self.laneIndex, self.targetPositionIndex)
+        self.updateVehicleLocation(nextTargetPosition, self.speed) # TODO add target position somehow
         
 
 
@@ -128,13 +140,13 @@ class Vehicle:
 
 #---------------------Car---------------------#
 class Car(Vehicle):
-    def __init__(self, location : Vector2, lane : int, speed=60):
+    def __init__(self, location : Vector2, directionIndex : int, lane : int, speed=60):
         self.weight = 2
         self.length = 30
         self.width = 20
         self.coefficient = normal(CAR_AVG_SPEED, CAR_STANDARD_DEVIATION)
         self.colorIndex = random.randint(0, 4)
-        super().__init__(location, lane, speed)
+        super().__init__(location, directionIndex, lane, speed)
     
     
     
@@ -143,9 +155,9 @@ class Car(Vehicle):
     
 #--------------------Truck--------------------#
 class Truck(Vehicle):
-    def __init__(self, location : Vector2, lane : int, speed=60):
+    def __init__(self, location : Vector2, directionIndex : int, lane : int, speed=60):
         self.weight = 15
         self.length = 65
         self.width = 20
         self.coefficient = normal(TRUCK_AVG_SPEED, TRUCK_STANDARD_DEVIATION)
-        super().__init__(location, lane, speed)
+        super().__init__(location, directionIndex, lane, speed)

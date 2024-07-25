@@ -5,6 +5,8 @@ from calculations.road_calculation import RoadCalculator
 from simulation.world.Point import Point
 import sympy as sp
 
+###### oi, wtf is this shit
+
 class RoadDrawer:
 
     @staticmethod

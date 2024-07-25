@@ -2,16 +2,28 @@ import pygame
 from simulation.world.road import Road
 
 class World:
+    NUMBER_OF_CARS = 100
+
     PIXELS_PER_METER = 5
+    FPS = 60
+
+    LANE_SIZE = 20
+    NUMBER_OF_LANES = 5
+
+    MAX_SPEED = 100
+    FREQUENCY = 10
+    POLITENESS = 1
+    PIXELS_PER_METER = 5
+    
     FPS = 60
     SCREEN_WIDTH = 1280 
     SCREEN_HEIGHT = 720
     SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-
     
-    def __init__(self, maxSpeed : int, frequency : int, politeness : int, road : Road):
-        self.maxSpeed = maxSpeed
-        self.frequency = frequency
-        self.politeness = politeness
+    GREY = (153, 163, 164)
+    WHITE = (255, 255, 255)
+    BLACK = (0, 0, 0)
+    
+    def __init__(self, road : Road):
         self.road = road
         
