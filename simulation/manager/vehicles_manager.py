@@ -12,34 +12,43 @@ TRUCK_PROBABILITY = 0.1
 class VehiclesManager:
     
     def __init__(self, max_number_of_cars) -> None:
-        self.vehicles = []
-        self.num_of_cars = max_number_of_cars
+        self.vehicles : list[Vehicle] = []
+        self.maxNumOfCars = max_number_of_cars
 
 
-    def addCar(self, lanes: list[Road.Lane], simulationWorld: World):
-        if random.uniform(0, 1) >= 1 / (simulationWorld.frequency * 10):
-            if len(self.vehicles) < self.num_of_cars:
-                for lane in lanes:
-                    space_available = True
-                    for vehicle in self.vehicles:
-                        if vehicle.lane == lanes.index(lane) and vehicle.location.x <= 100:
-                            space_available = False
-                            break
-                    if space_available:
-                        coordinates = Vector2(-simulationWorld.maxSpeed, lane.y) # TODO think how to move to start of road 
-                        #coordinates = Point(-simulationWorld.maxSpeed, lane.y)
-                        new_vehicle_lane = simulationWorld.road.getLane(coordinates)
-                        car_probability = random.uniform(0, 1)
-                        if car_probability >= TRUCK_PROBABILITY:
-                            newVehicle = Car(coordinates, new_vehicle_lane, speed=simulationWorld.maxSpeed)
-                        else:
-                            newVehicle = Truck(coordinates, new_vehicle_lane ,speed=simulationWorld.maxSpeed)
-                        newVehicle.setDesiredSpeed(simulationWorld.maxSpeed)
-                        self.vehicles.append(newVehicle)
+    def add_vehicles(self, allLanesInRoad : list[list[Road.Lane]], simulationWorld: World):
+        """
+        adds at most one new vehicle for each lane
+        """
+        for direction in allLanesInRoad:
+            for lane in direction:
+                if len(self.vehicles) < self.maxNumOfCars:
+                    if random.uniform(0, 1) >= 1 / (simulationWorld.frequency * 10):
+                        space_available = True
+                        for vehicle in self.vehicles:
+                            if vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.laneIndex == direction.index(lane) and vehicle.location.distance_to(lane.startingPoint) <= 100:
+                                # TODO fix distance checking! currently checks in an "air distance" so not entirely accurate
+                                space_available = False
+                                break
+                        if space_available:
+                            vehicleCoordinates = lane.path[0]
+                            #coordinates = Vector2(-simulationWorld.maxSpeed, lane.y) # TODO think how to move to start of road 
+                            directionIndex = allLanesInRoad.index(direction)
+                            newVehicleLane = direction.index(lane)
+                            car_probability = random.uniform(0, 1)
+                            if car_probability >= TRUCK_PROBABILITY:
+                                newVehicle = Car(vehicleCoordinates, directionIndex, newVehicleLane, speed=simulationWorld.maxSpeed)
+                            else:
+                                newVehicle = Truck(vehicleCoordinates, directionIndex, newVehicleLane ,speed=simulationWorld.maxSpeed)
+                            newVehicle.setDesiredSpeed(simulationWorld.maxSpeed)
+                            self.vehicles.append(newVehicle)
                         
                         
-    def removeCars(self, end : int):
+    def remove_vehicles(self, allLanesInRoad : list[list[Road.Lane]]):
         for vehicle in self.vehicles:
-            if vehicle.location.x > end:
+            directionIndex = vehicle.directionIndex
+            laneIndex = vehicle.laneIndex
+            
+            if vehicle.location == allLanesInRoad[directionIndex][laneIndex].path[-1]:
                 self.vehicles.remove(vehicle)
 

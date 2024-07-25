@@ -1,11 +1,13 @@
 #from simulation.world.Point import Point
+import json
+import pygame.image
 from pygame.math import Vector2
 from pygame.surface import Surface
 
 class Road:
-    def __init__(self, startingNumberOfLanes : int, lanes : list[list['Lane']], laneImages : list[Surface]):
-        self.lanes = lanes
-        self.numberOfDirections = len(lanes)
+    def __init__(self, startingNumberOfLanes : int, allLanesInRoad : list[list['Lane']], laneImages : list[Surface]):
+        self.allLanesInRoad = allLanesInRoad
+        self.numberOfDirections = len(allLanesInRoad)
         self.currNumOfLanes = startingNumberOfLanes
         self.laneImages = laneImages
                
@@ -19,99 +21,72 @@ class Road:
         if self.currNumOfLanes != 1:
             self.currNumOfLanes -= 1
             # TODO remove all vehicles on deleted lane
-            
+        
+    def get_next_target_position(self, directionIndex : int, laneIndex : int, currentTargetPositionIndex : int) -> Vector2:
+        return self.allLanesInRoad[directionIndex][laneIndex].path[currentTargetPositionIndex + 1]
 
     class Lane:
-        def __init__(self, listOfCoordinates : list[Vector2], availableLanesIndexes : list[int]):
+        def __init__(self, listOfCoordinates : list[Vector2]):
             self.path = listOfCoordinates
-            self.availableLanesIndexes = availableLanesIndexes
+            self.startingPoint = listOfCoordinates[0]
+        
+        
 
 
 
 class RoadBuilder:
     staticmethod
-    def create_road(filePath : str, startingNumberOfLanes=2) -> Road:
-        if 'straight' in filePath:
-            lanes = RoadBuilder.straight_road_read_lanes_from_file()
-        elif 'curve' in filePath:
+    def create_road(roadName : str, startingNumberOfLanes=2) -> Road:
+        if 'straight' in roadName:
+            lanes = RoadBuilder.straight_road_read_lanes_from_file(startingNumberOfLanes)
+        elif 'curve' in roadName:
             lanes # TODO implement new functions
         
-        images = RoadBuilder.load_lane_images(filePath)
+        images = RoadBuilder.load_lane_images(roadName)
         return Road(startingNumberOfLanes, lanes, images)
         
         
     staticmethod
-    def straight_road_read_lanes_from_file(filePath) -> list[list[Road.Lane]]: # TODO implement and move to inheriting classes
-        with open(filePath, 'r') as file:
-            index = 0
-            laneOneWay = []
-            laneTwoWay = []
-            
-            lanes = [laneOneWay, laneTwoWay]
-            for line in file:
-                line = line.strip()
-                coordinates = tuple(map(int, line.strip("()").split(',')))
-                newLane = Road.Lane(coordinates, )
-                
-                if index % 2 == 0:
-                    laneOneWay.append(coordinates)
-                else:
-                    laneTwoWay.append(coordinates)
-                index += 1
-                    
-                # if line.startswith("lane"):
-                #     lanes.append(list[Road.Lane])
+    def straight_road_read_lanes_from_file(startingNumberOfLanes : int) -> list[list[Road.Lane]]: # TODO implement and move to inheriting classes
+        with open("jsons\\road.json", 'r') as file:
+            data = json.load(file)
 
-                # elif line.startswith("("):
-                #     # Extract the coordinates and convert them to a tuple of integers
-                #     coordinates = tuple(map(int, line.strip("()").split(',')))
-                #     lane.append(coordinates)
-                # elif line == "":
-                #     lanes.append()
-                #     lane = []
-                    
-                         
-                    
-    
+            road_data = data['straight_road']
+            if startingNumberOfLanes == 1:
+                lanes_data = road_data['one_lane']
+            else:
+                lanes_data = road_data['two_lanes']
+
+            lanes_direction_1 = []
+            lanes_direction_2 = []
+            
+            for idx, lane_coordinates in enumerate(lanes_data):
+                path = [Vector2(coord) for coord in lane_coordinates]
+                lane = Road.Lane(path)
+
+                if idx % 2 != 0:
+                    lanes_direction_1.append(lane)
+                else:
+                    lanes_direction_2.append(lane)
+
+            return [lanes_direction_1, lanes_direction_2]
     
     
     staticmethod
     def load_lane_images(roadName : str) -> list[Surface]: # TODO implement and move to inheriting classes
-        return 0
-
-
-    def stam():
-        # Read the file and extract lanes and segments correctly
-        file_path = '/mnt/data/straight_road_lanes.txt'
-
-        # Initialize an empty dictionary to store lanes and their coordinates
-        lanes = {}
-
-        # Read the file and process it
-        with open(file_path, 'r') as file:
-            current_lane = None
-            segment = []
-            for line in file:
-                line = line.strip()
-                if line.startswith("lane"):
-                    if current_lane and segment:
-                        lanes[current_lane].append(segment)
-                    current_lane = line
-                    lanes[current_lane] = []
-                    segment = []
-                elif line.startswith("("):
-                    # Extract the coordinates and convert them to a tuple of integers
-                    coordinates = tuple(map(int, line.strip("()").split(',')))
-                    segment.append(coordinates)
-                elif line == "" and current_lane and segment:
-                    lanes[current_lane].append(segment)
-                    segment = []
+        with open("jsons\\road.json", 'r') as file:
+            data = json.load(file)
+            if "straight" in roadName:
+                imagesPaths = data["straight_road"]["images_path"]
+            elif "curved" in roadName:
+                imagesPaths #TODO implement
             
-            # Add the last segment of the last lane if it exists
-            if current_lane and segment:
-                lanes[current_lane].append(segment)
+            images = []
+            for imagePath in imagesPaths:
+                images.append(pygame.image.load(imagePath)) #TODO add scale? if so, what scale            
+            return images
 
-        lanes
+
 
 
 
