@@ -29,19 +29,36 @@ class Vehicle:
         self.rect = image.get_rect()
 
         
-
-    def update_vehicle_location(self, targetPos : Vector2, speed):
+    def update_vehicle_location(self, targetPos: Vector2, speed):
         direction = targetPos - self.location
-        self.driveAngle = -math.degrees(math.atan2(direction.y,direction.x))
-        self.rotate_vehicle()
-        distance = direction.length() # TODO add case for speed == 0?
+        desiredAngle = (-math.degrees(math.atan2(direction.y, direction.x))) % 360
+
+        if desiredAngle != self.driveAngle:
+            self.driveAngle = desiredAngle
+            self.rotate_vehicle()
+
+        distance = direction.length()
         if distance > speed:
             direction.scale_to_length(speed)
             self.location += direction
-
         else:
             self.location.update(targetPos)
-            self.targetPositionIndex += 1 #TODO check what happens when a vehicle gets to the end of the lane. theoretically speaking, the vehicle should get removed
+            self.targetPositionIndex += 1
+
+        # Update the rect position
+        self.rect.center = self.location
+            
+    # def update_vehicle_location(self, targetPos : Vector2, speed):
+    #     direction = targetPos - self.location
+    #     self.driveAngle = -math.degrees(math.atan2(direction.y, direction.x))
+    #     self.rotate_vehicle()
+    #     distance = direction.length() # TODO add case for speed == 0?
+    #     if distance > speed:
+    #         direction.scale_to_length(speed)
+    #         self.location += direction
+    #     else:
+    #         self.location.update(targetPos)
+    #         self.targetPositionIndex += 1 #TODO check what happens when a vehicle gets to the end of the lane. theoretically speaking, the vehicle should get removed
 
     def rotate_vehicle(self):
         self.image = transform.rotate(self.image, self.driveAngle)

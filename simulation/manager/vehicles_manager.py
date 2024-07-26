@@ -8,6 +8,7 @@ from pygame.math import Vector2
 from pygame import Surface
 from drawings.vehicle_drawer import VehicleDrawer
 import random
+import math
 
 TRUCK_PROBABILITY = 0.1
 
@@ -36,7 +37,8 @@ class VehiclesManager:
                                     break
                         if space_available:
                             vehicleCoordinates = Vector2(lane.path[0].x, lane.path[0].y)
-                            driveAngle = lane.path[1] - vehicleCoordinates
+                            initialDirection = lane.path[1] - vehicleCoordinates
+                            driveAngle = -math.degrees(math.atan2(initialDirection.y, initialDirection.x))
                             #coordinates = Vector2(-simulationWorld.maxSpeed, lane.y) # TODO think how to move to start of road 
                             directionIndex = allLanesInRoad.index(direction)
                             newVehicleLane = direction.index(lane)
