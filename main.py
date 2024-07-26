@@ -33,17 +33,17 @@ next_stat_update = pygame.time.get_ticks() + dataManager.export_interval * 1000 
 
 while simulationRunning:
     screen.fill(simulationWorld.WHITE)
-    #TODO put road on screen
+    screen.blit(road.laneImages[road.currNumOfLanes * 2 - 1], road.imagesPositions[road.currNumOfLanes * 2 - 1]) #TODO renove this late, this is for testing only
     
-    vehiclesManager.add_vehicles(road.allLanesInRoad, simulationWorld)
+    vehiclesManager.add_vehicles(road.allLanesInRoad, simulationWorld) #TODO check why this doesnt work
     updateCarPos(vehiclesManager.vehicles, simulationWorld, dataManager)
     VehicleDrawer.draw_vehicles(vehiclesManager.vehicles, screen)
     vehiclesManager.remove_vehicles(road.allLanesInRoad)
 
-    # current_time = pygame.time.get_ticks()
-    # if current_time >= next_stat_update:
-    #     dataManager.update_stats(vehiclesManager.vehicles)
-    #     next_stat_update = current_time + dataManager.export_interval * 1000
+    current_time = pygame.time.get_ticks()
+    if current_time >= next_stat_update:
+        dataManager.update_stats(vehiclesManager.vehicles)
+        next_stat_update = current_time + dataManager.export_interval * 1000
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:

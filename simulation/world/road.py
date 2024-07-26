@@ -5,11 +5,12 @@ from pygame.math import Vector2
 from pygame.surface import Surface
 
 class Road:
-    def __init__(self, startingNumberOfLanes : int, allLanesInRoad : list[list['Lane']], laneImages : list[Surface]):
+    def __init__(self, startingNumberOfLanes : int, allLanesInRoad : list[list['Lane']], laneImages : list[Surface], imagesPositions : list[list[int]]):
         self.allLanesInRoad = allLanesInRoad
         self.numberOfDirections = len(allLanesInRoad)
         self.currNumOfLanes = startingNumberOfLanes
         self.laneImages = laneImages
+        self.imagesPositions = imagesPositions
                
         
     def add_lane(self):
@@ -23,7 +24,7 @@ class Road:
             # TODO remove all vehicles on deleted lane
         
     def get_next_target_position(self, directionIndex : int, laneIndex : int, currentTargetPositionIndex : int) -> Vector2:
-        return self.allLanesInRoad[directionIndex][laneIndex].path[currentTargetPositionIndex + 1]
+        return self.allLanesInRoad[directionIndex][laneIndex].path[currentTargetPositionIndex + 1] #TODO maybe change +1 to take speed into consideration
 
     class Lane:
         def __init__(self, listOfCoordinates : list[Vector2]):
@@ -33,60 +34,62 @@ class Road:
         
 
 
-
 class RoadBuilder:
-    staticmethod
+    @staticmethod
     def create_road(roadName : str, startingNumberOfLanes=2) -> Road:
         if 'straight' in roadName:
             lanes = RoadBuilder.straight_road_read_lanes_from_file(startingNumberOfLanes)
-        elif 'curve' in roadName:
+        elif 'curved' in roadName:
             lanes # TODO implement new functions
         
-        images = RoadBuilder.load_lane_images(roadName)
-        return Road(startingNumberOfLanes, lanes, images)
+        images, imagesPos = RoadBuilder.load_lane_images(roadName)
+        return Road(startingNumberOfLanes, lanes, images, imagesPos)
         
         
-    staticmethod
+    @staticmethod
     def straight_road_read_lanes_from_file(startingNumberOfLanes : int) -> list[list[Road.Lane]]: # TODO implement and move to inheriting classes
         with open("jsons\\road.json", 'r') as file:
             data = json.load(file)
 
             road_data = data['straight_road']
-            if startingNumberOfLanes == 1:
-                lanes_data = road_data['one_lane']
-            else:
-                lanes_data = road_data['two_lanes']
+            lanes_data = road_data['lanes']
 
             lanes_direction_1 = []
             lanes_direction_2 = []
             
+            #TODO add a way to limit user - only 1 or 2 lanes in each direction
+            
             for idx, lane_coordinates in enumerate(lanes_data):
-                path = [Vector2(coord) for coord in lane_coordinates]
-                lane = Road.Lane(path)
+                if idx < 2 * startingNumberOfLanes:
+                    path = [Vector2(coord) for coord in lane_coordinates]
+                    lane = Road.Lane(path)
 
-                if idx % 2 != 0:
-                    lanes_direction_1.append(lane)
-                else:
-                    lanes_direction_2.append(lane)
+                    if idx % 2 != 0:
+                        lanes_direction_1.append(lane)
+                    else:
+                        lanes_direction_2.append(lane)
 
             return [lanes_direction_1, lanes_direction_2]
     
     
-    staticmethod
-    def load_lane_images(roadName : str) -> list[Surface]: # TODO implement and move to inheriting classes
+    @staticmethod
+    def load_lane_images(roadName : str) -> list[list]: # TODO implement and move to inheriting classes
         with open("jsons\\road.json", 'r') as file:
             data = json.load(file)
             if "straight" in roadName:
-                imagesPaths = data["straight_road"]["images_path"]
+                roadData = data["straight_road"]
             elif "curved" in roadName:
-                imagesPaths #TODO implement
+                roadData #TODO implement
             
+            imagesPaths = roadData["images_path"]
+            imagesScales = roadData["images_scales"]
+            imagesPos = roadData["image_pos"]
             images = []
-            for imagePath in imagesPaths:
-                images.append(pygame.image.load(imagePath)) #TODO add scale? if so, what scale            
-            return images
+            for index, imagePath in enumerate(imagesPaths):
+                images.append(pygame.transform.scale(pygame.image.load(imagePath), imagesScales[index])) #TODO add scale? if so, what scale            
+            return [images, imagesPos]
 
-
+            # pygame.transform.scale(pygame.image.load('carPictures\\redCar.png'), (25, 15))
 
 
 

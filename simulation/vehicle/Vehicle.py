@@ -55,11 +55,11 @@ class Vehicle:
     def checkDistance(self, other_vehicles : list['Vehicle'], world: World, dataManager : DataManager):
         back_of_vehicle = self.location.x
         front_of_vehicle = self.location.x + self.length
-        minimal_distance = 10 + world.politeness * 10
+        minimal_distance = 10 + world.POLITENESS * 10
 
         for other_vehicle in other_vehicles:
             if self != other_vehicle:
-                if self.lane == other_vehicle.lane:
+                if self.laneIndex == other_vehicle.laneIndex:
                     back_of_other_vehicle = other_vehicle.location.x - 3
                     front_of_other_vehicle = other_vehicle.location.x + other_vehicle.length
                     # start of accidents detection
@@ -116,34 +116,35 @@ class Vehicle:
         Caculates and updates a vehicle's speed according to the road's conditions - traffic lights, hazards, etc.
         Then updates the vehicle's position based on its new speed
         """
-        # max_acceleration = 2  
-        # max_deceleration = -5 
+        max_acceleration = 2  
+        max_deceleration = -5 
 
-        # acceleration_factor = max_acceleration / self.weight
-        # deceleration_factor = max_deceleration / self.weight
+        acceleration_factor = max_acceleration / self.weight
+        deceleration_factor = max_deceleration / self.weight
 
-        # cruising_speed_factor = 0.5 #TODO: shouldn't be a literal but related to the next vehicle's speed
-        # cruising_speed = self.desiredSpeed * cruising_speed_factor
+        cruising_speed_factor = 0.5 #TODO: shouldn't be a literal but related to the next vehicle's speed
+        cruising_speed = self.desiredSpeed * cruising_speed_factor
 
-        # clear_space_ahead = self.checkDistance(other_vehicles, world, dataManager)
-        # if clear_space_ahead:
-        #     acceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(acceleration_factor)
-        #     if self.speed + acceleration_speed <= self.desiredSpeed:
-        #         self.speed += acceleration_speed
-        #     else:
-        #         self.speed = self.desiredSpeed
-        # else:
-        #     if self.inAccident == True:
-        #         self.speed = 0
-        #     else:
-        #         if self.speed > cruising_speed:
-        #             deceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(deceleration_factor)
-        #             if self.speed + deceleration_speed > cruising_speed:
-        #                 self.speed += deceleration_speed
-        #             else:
-        #                 self.speed = cruising_speed
-        #         else:
-        #             self.speed = cruising_speed
+        #clear_space_ahead = self.checkDistance(other_vehicles, world, dataManager)
+        #if clear_space_ahead:
+        if True: #TODO DONT FORGET TO REMOVE THIS SHIT!!
+            acceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(acceleration_factor)
+            if self.speed + acceleration_speed <= self.desiredSpeed:
+                self.speed += acceleration_speed
+            else:
+                self.speed = self.desiredSpeed
+        else:
+            if self.inAccident == True:
+                self.speed = 0
+            else:
+                if self.speed > cruising_speed:
+                    deceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(deceleration_factor)
+                    if self.speed + deceleration_speed > cruising_speed:
+                        self.speed += deceleration_speed
+                    else:
+                        self.speed = cruising_speed
+                else:
+                    self.speed = cruising_speed
         
         nextTargetPosition = road.get_next_target_position(self.directionIndex, self.laneIndex, self.targetPositionIndex)
         self.update_vehicle_location(nextTargetPosition, self.speed) # TODO add target position somehow
