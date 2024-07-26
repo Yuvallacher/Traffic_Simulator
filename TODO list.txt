@@ -19,7 +19,8 @@ move main.drawCar ro drawings\vehicle.drawer.py
 
 add usere interface with scrollers, buttons and stuff like that to allow users to controll the environment variables 
 
+fix rotating car problem
 
-
+fix index out of range when car reaches end of path
 
 add documentation to difficult to understand function (in the """ comment """ way)

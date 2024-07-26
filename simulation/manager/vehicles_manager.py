@@ -28,12 +28,14 @@ class VehiclesManager:
                     if random.uniform(0, 1) >= 1 / (simulationWorld.FREQUENCY * 10):
                         space_available = True
                         for vehicle in self.vehicles:
-                            if vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.laneIndex == direction.index(lane) and vehicle.location.distance_to(lane.startingPoint) <= 100:
-                                # TODO fix distance checking! currently checks in an "air distance" so not entirely accurate
-                                space_available = False
-                                break
+                            # if vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.laneIndex == direction.index(lane) and vehicle.location.distance_to(lane.startingPoint) <= 100:
+                            if vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.laneIndex == direction.index(lane):
+                                if vehicle.targetPositionIndex <= 3:
+                                    # TODO fix distance checking! currently checks in an "air distance" so not entirely accurate
+                                    space_available = False
+                                    break
                         if space_available:
-                            vehicleCoordinates = lane.path[0]
+                            vehicleCoordinates = Vector2(lane.path[0].x, lane.path[0].y)
                             driveAngle = lane.path[1] - vehicleCoordinates
                             #coordinates = Vector2(-simulationWorld.maxSpeed, lane.y) # TODO think how to move to start of road 
                             directionIndex = allLanesInRoad.index(direction)
