@@ -30,7 +30,7 @@ class VehiclesManager:
                         space_available = True
                         for vehicle in self.vehicles:
                             # if vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.laneIndex == direction.index(lane) and vehicle.location.distance_to(lane.startingPoint) <= 100:
-                            if vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.laneIndex == direction.index(lane):
+                            if vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.currentLaneIndex == direction.index(lane):
                                 if vehicle.targetPositionIndex <= 3:
                                     # TODO fix distance checking! currently checks in an "air distance" so not entirely accurate
                                     space_available = False
@@ -56,7 +56,7 @@ class VehiclesManager:
     def remove_vehicles(self, allLanesInRoad : list[list[Road.Lane]]):
         for vehicle in self.vehicles:
             directionIndex = vehicle.directionIndex
-            laneIndex = vehicle.laneIndex
+            laneIndex = vehicle.currentLaneIndex
             
             if vehicle.location == allLanesInRoad[directionIndex][laneIndex].path[-1]:
                 self.vehicles.remove(vehicle)

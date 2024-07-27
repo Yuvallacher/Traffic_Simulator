@@ -16,12 +16,14 @@ TRUCK_AVG_SPEED = 0.8
 TRUCK_STANDARD_DEVIATION = 0.09
 
 class Vehicle:
-    def __init__(self, location : Vector2, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface ,speed=60):
+    def __init__(self, location : Vector2, speedCoefficient : float, directionIndex : int, currentLaneIndex : int, driveAngle : float, image : Surface ,speed=60):
         self.location = location
         self.speed = PixelsConverter.convert_speed_to_pixels_per_frames(speed)
         self.desiredSpeed = 0.0
+        self.speedCoefficient = speedCoefficient
         self.directionIndex = directionIndex
-        self.laneIndex = laneIndex
+        self.currentLaneIndex = currentLaneIndex
+        self.desiredLaneIndex = self.currentLaneIndex
         self.targetPositionIndex = 0
         self.inAccident = False
         self.driveAngle = driveAngle
@@ -34,8 +36,9 @@ class Vehicle:
         """
         scan the surroundings, compute the next decision and execute it
         """
-        allHazards = self.get_all_harazds_around_vehicle(allVehicles, road)
-        self.make_next_desicion(road, world, allHazards, dataManager)
+        allHazards = self.get_all_harazds_around_vehicle(allVehicles, road, world.POLITENESS, dataManager)
+        if not self.inAccident:
+            self.make_next_desicion(road, world, allHazards, dataManager)
         
     
     def make_next_desicion(self, road : Road, world : World, allHazards : dict, dataManager : DataManager):
@@ -74,7 +77,7 @@ class Vehicle:
          
     
     def setDesiredSpeed(self, maxSpeed : int):
-        self.desiredSpeed = PixelsConverter.convert_speed_to_pixels_per_frames(self.coefficient * maxSpeed)
+        self.desiredSpeed = PixelsConverter.convert_speed_to_pixels_per_frames(self.speedCoefficient * maxSpeed)
     
     
     def checkDistance(self, other_vehicles : list['Vehicle'], world: World, dataManager : DataManager):
@@ -84,7 +87,7 @@ class Vehicle:
 
         for other_vehicle in other_vehicles:
             if self != other_vehicle:
-                if self.laneIndex == other_vehicle.laneIndex:
+                if self.currentLaneIndex == other_vehicle.currentLaneIndex:
                     back_of_other_vehicle = other_vehicle.location.x - 3
                     front_of_other_vehicle = other_vehicle.location.x + other_vehicle.length
                     # start of accidents detection
@@ -105,7 +108,7 @@ class Vehicle:
         return True
     
     
-    def get_all_harazds_around_vehicle(self, other_vehicles : list['Vehicle'], road : Road, politeness : int) -> dict:
+    def get_all_harazds_around_vehicle(self, allVehicles : list['Vehicle'], road : Road, politeness : int, dataManager : DataManager) -> dict:
         """
         The vehicle scans its sorroundings for hazards, oncoming traffic, and other variables that can influence the driver's decision
         """
@@ -113,23 +116,41 @@ class Vehicle:
         surroundings['vehicles'] = []
         surroundings['vehicle_ahead'] = None
         #TODO: more checks for surroundings like hazards, turns, etc.
-        
-        front_of_vehicle = self.location.x + self.length
-        minimal_distance = 10 + politeness * 10
-        
-        for other_vehicle in other_vehicles:
+        fieldOfView = QuadCalculation.create_quad(self.rotatedImage.get_rect())
+                
+        for other_vehicle in allVehicles:
             if self != other_vehicle:
-                if self.lane == other_vehicle.lane:
-                    back_of_other_vehicle = other_vehicle.location.x - 3
-                    front_of_other_vehicle = other_vehicle.location.x + other_vehicle.length
-                    if front_of_vehicle < back_of_other_vehicle or front_of_vehicle < front_of_other_vehicle:
-                        distance = back_of_other_vehicle - front_of_vehicle
-                        if distance < minimal_distance:
-                            surroundings['vehicles'].append(other_vehicle)
+                if self.rotatedImage.get_rect().colliderect(other_vehicle.rotatedImage.get_rect()):
+                    if not (self.inAccident and other_vehicle.inAccident):
+                        dataManager.log_accident(type(self).__name__, type(other_vehicle).__name__, PixelsConverter.convert_pixels_per_frames_to_speed(self.speed), PixelsConverter.convert_pixels_per_frames_to_speed(other_vehicle.speed))
+                    self.inAccident = True
+                    self.speed = 0
+                    other_vehicle.inAccident = True
+                    other_vehicle.speed = 0
+                    return
+                elif QuadCalculation.point_in_quad(other_vehicle.location, fieldOfView):
+                    surroundings['vehicles'].append(other_vehicle)
+                    
+                # if self.lane == other_vehicle.lane:
+                #     back_of_other_vehicle = other_vehicle.location.x - 3
+                #     front_of_other_vehicle = other_vehicle.location.x + other_vehicle.length
+                #     if front_of_vehicle < back_of_other_vehicle or front_of_vehicle < front_of_other_vehicle:
+                #         distance = back_of_other_vehicle - front_of_vehicle
+                #         if distance < minimal_distance:
+                #             surroundings['vehicles'].append(other_vehicle)
 
-        
+        surroundings['vehicle_ahead'] = self.get_vehicle_ahead(surroundings['vehicles'])
         return surroundings
+    
         
+    def get_vehicle_ahead(self, allVehiclesInFieldOfView : list['Vehicle']) -> 'Vehicle':
+        if len(allVehiclesInFieldOfView) == 0:
+            return None
+        else:
+            currentVehicleAhead = None
+            for vehicle in allVehiclesInFieldOfView:
+                x = 10
+        #TODO implement method to get the closest vehicle from the front and in the same lane (same currentLaneIndex)
     
     
     def accelerateAndBreak(self, other_vehicles : list['Vehicle'], world: World, dataManager : DataManager, road : Road):
@@ -166,7 +187,7 @@ class Vehicle:
                 else:
                     self.speed = cruising_speed
         
-        nextTargetPosition = road.get_next_target_position(self.directionIndex, self.laneIndex, self.targetPositionIndex)
+        nextTargetPosition = road.get_next_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex)
         self.update_vehicle_location(nextTargetPosition, self.speed) # TODO add target position somehow
         
 
@@ -212,9 +233,9 @@ class Car(Vehicle):
         self.weight = 2
         self.length = 30
         self.width = 20
-        self.coefficient = normal(CAR_AVG_SPEED, CAR_STANDARD_DEVIATION)
         self.colorIndex = random.randint(0, 4)
-        super().__init__(location, directionIndex, laneIndex, driveAngle, image, speed)
+        speedCoefficient = normal(CAR_AVG_SPEED, CAR_STANDARD_DEVIATION)
+        super().__init__(location, speedCoefficient, directionIndex, laneIndex, driveAngle, image, speed)
     
     
     
@@ -227,5 +248,5 @@ class Truck(Vehicle):
         self.weight = 15
         self.length = 65
         self.width = 20
-        self.coefficient = normal(TRUCK_AVG_SPEED, TRUCK_STANDARD_DEVIATION)
-        super().__init__(location, directionIndex, laneIndex, driveAngle, image, speed)
+        speedCoefficient = normal(TRUCK_AVG_SPEED, TRUCK_STANDARD_DEVIATION)
+        super().__init__(location, speedCoefficient, directionIndex, laneIndex, driveAngle, image, speed)

@@ -15,6 +15,7 @@ create new road types - curve, plus-junction, T-junction (maybe juncion class an
 
 CREATE, FIX AND IMPROVE VEHICLE'S AI MODEL!!!!!!11!1111!!1!!1
     add acident detection to get_all_harazds_around_vehicle
+    complete Vehicle.get_vehicle_ahead()
 
 move main.drawCar ro drawings\vehicle.drawer.py
 
