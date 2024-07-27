@@ -68,6 +68,7 @@ class RoadBuilder:
                     path = [Vector2(coord) for coord in lane_coordinates]
                     lane = Road.Lane(path)
 
+                    # in the JSON, odd-indexed lanes are put in lane_direction_2 (that means left-to-right driving direction)
                     if idx % 2 != 0:
                         lanes_direction_1.append(lane)
                     else:

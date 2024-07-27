@@ -36,5 +36,5 @@ class VehicleDrawer:
     @staticmethod
     def draw_vehicles(vehicles : list[Vehicle], screen):
         for vehicle in vehicles:
-            screen.blit(vehicle.image, vehicle.rect.topleft)
+            screen.blit(vehicle.rotatedImage, vehicle.rect.topleft)
             

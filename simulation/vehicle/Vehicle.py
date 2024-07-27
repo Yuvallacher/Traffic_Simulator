@@ -1,13 +1,13 @@
 from calculations.pixels_calculations import PixelsConverter
 from simulation.data.DataManager import DataManager
-#from simulation.world.Point import Point
+from calculations.polygon_calculations import QuadCalculation
 from simulation.world.World import World
 from simulation.world.World import Road
-import random
 from numpy.random import normal
 from pygame.math import Vector2
 from pygame import transform
 from pygame import Surface
+import random
 import math
 
 CAR_AVG_SPEED = 1
@@ -25,14 +25,34 @@ class Vehicle:
         self.targetPositionIndex = 0
         self.inAccident = False
         self.driveAngle = driveAngle
-        self.image = image
+        self.originalImage = image
+        self.rotatedImage = self.originalImage
         self.rect = image.get_rect()
 
         
+    def drive(self, allVehicles : list['Vehicle'], world: World, dataManager : DataManager, road : Road):
+        """
+        scan the surroundings, compute the next decision and execute it
+        """
+        allHazards = self.get_all_harazds_around_vehicle(allVehicles, road)
+        self.make_next_desicion(road, world, allHazards, dataManager)
+        
+    
+    def make_next_desicion(self, road : Road, world : World, allHazards : dict, dataManager : DataManager):
+        """
+        compute and execute the next decision based on the surroindings
+        """
+        self.upgradedAccelerateAndBreak(allHazards['vehicle_ahead'], dataManager) 
+        
+        #TODO implement lane swap
+        #TODO implement decision
+        pass 
+    
     def update_vehicle_location(self, targetPos: Vector2, speed):
         direction = targetPos - self.location
         desiredAngle = (-math.degrees(math.atan2(direction.y, direction.x))) % 360
-
+        
+        #if (desiredAngle != self.driveAngle and desiredAngle != -self.driveAngle) or desiredAngle == 0:
         if desiredAngle != self.driveAngle:
             self.driveAngle = desiredAngle
             self.rotate_vehicle()
@@ -45,24 +65,12 @@ class Vehicle:
             self.location.update(targetPos)
             self.targetPositionIndex += 1
 
-        # Update the rect position
         self.rect.center = self.location
             
-    # def update_vehicle_location(self, targetPos : Vector2, speed):
-    #     direction = targetPos - self.location
-    #     self.driveAngle = -math.degrees(math.atan2(direction.y, direction.x))
-    #     self.rotate_vehicle()
-    #     distance = direction.length() # TODO add case for speed == 0?
-    #     if distance > speed:
-    #         direction.scale_to_length(speed)
-    #         self.location += direction
-    #     else:
-    #         self.location.update(targetPos)
-    #         self.targetPositionIndex += 1 #TODO check what happens when a vehicle gets to the end of the lane. theoretically speaking, the vehicle should get removed
-
+            
     def rotate_vehicle(self):
-        self.image = transform.rotate(self.image, self.driveAngle)
-        self.rect = self.image.get_rect(center=self.location)
+        self.rotatedImage = transform.rotate(self.originalImage, self.driveAngle)
+        self.rect = self.rotatedImage.get_rect(center=self.location)
          
     
     def setDesiredSpeed(self, maxSpeed : int):
@@ -103,6 +111,7 @@ class Vehicle:
         """
         surroundings = {}
         surroundings['vehicles'] = []
+        surroundings['vehicle_ahead'] = None
         #TODO: more checks for surroundings like hazards, turns, etc.
         
         front_of_vehicle = self.location.x + self.length
@@ -121,11 +130,6 @@ class Vehicle:
         
         return surroundings
         
-
-    def makeNextDesicion(self, obstacles: list):
-        #TODO implement lane swap
-        #TODO implement decision
-        pass 
     
     
     def accelerateAndBreak(self, other_vehicles : list['Vehicle'], world: World, dataManager : DataManager, road : Road):
@@ -142,9 +146,8 @@ class Vehicle:
         cruising_speed_factor = 0.5 #TODO: shouldn't be a literal but related to the next vehicle's speed
         cruising_speed = self.desiredSpeed * cruising_speed_factor
 
-        #clear_space_ahead = self.checkDistance(other_vehicles, world, dataManager)
-        #if clear_space_ahead:
-        if True: #TODO DONT FORGET TO REMOVE THIS SHIT!!
+        clear_space_ahead = self.checkDistance(other_vehicles, world, dataManager)
+        if clear_space_ahead:
             acceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(acceleration_factor)
             if self.speed + acceleration_speed <= self.desiredSpeed:
                 self.speed += acceleration_speed
@@ -169,6 +172,39 @@ class Vehicle:
 
 
 
+    def upgradedAccelerateAndBreak(self, vehicleAhead : 'Vehicle', dataManager : DataManager):
+        """
+        Caculates and updates a vehicle's speed according to the road's conditions - other vehicles, hazards, etc.
+        """
+        max_acceleration = 2  
+        max_deceleration = -5 
+
+        acceleration_factor = max_acceleration / self.weight
+        deceleration_factor = max_deceleration / self.weight
+
+        cruising_speed_factor = 0.5 #TODO: shouldn't be a literal but related to the next vehicle's speed
+        cruising_speed = self.desiredSpeed * cruising_speed_factor
+
+        clearSpaceAhead = (vehicleAhead == None)
+        if clearSpaceAhead:
+            acceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(acceleration_factor)
+            if self.speed + acceleration_speed <= self.desiredSpeed:
+                self.speed += acceleration_speed
+            else:
+                self.speed = self.desiredSpeed
+        else:
+            x = 10 # just to remove error, DELETE LINE LATER
+            # if self.inAccident == True:
+            #     self.speed = 0
+            # else:
+            #     if self.speed > cruising_speed:
+            #         deceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(deceleration_factor)
+            #         if self.speed + deceleration_speed > cruising_speed:
+            #             self.speed += deceleration_speed
+            #         else:
+            #             self.speed = cruising_speed
+            #     else:
+            #         self.speed = cruising_speed
 
 #---------------------Car---------------------#
 class Car(Vehicle):

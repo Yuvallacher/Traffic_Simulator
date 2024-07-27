@@ -15,14 +15,14 @@ road = RoadBuilder.create_road("straight", 2)
 simulationWorld = World(road)
 simulationRunning = True
 
-# def updateCarPos(vehicles: list[Vehicle], simulationWorld : World, dataManager : DataManager, road : Road): #TODO probably move to a different place
-#     for vehicle in vehicles:
-#         vehicle.accelerateAndBreak(vehicles, simulationWorld, dataManager, road)
-
-# just for testing
-def updateCarPos(vehicles: list[Vehicle], simulationWorld : World, road : Road): #TODO probably move to a different place
+def updateCarPos(vehicles: list[Vehicle], simulationWorld : World, dataManager : DataManager, road : Road): #TODO probably move to a different place
     for vehicle in vehicles:
-        vehicle.accelerateAndBreak(vehicles, simulationWorld, 0, road)    
+        vehicle.accelerateAndBreak(vehicles, simulationWorld, dataManager, road)
+
+# # just for testing
+# def updateCarPos(vehicles: list[Vehicle], simulationWorld : World, road : Road): #TODO probably move to a different place
+#     for vehicle in vehicles:
+#         vehicle.accelerateAndBreak(vehicles, simulationWorld, 0, road)    
 
 screen = pygame.display.set_mode((simulationWorld.SCREEN_WIDTH, simulationWorld.SCREEN_HEIGHT))
 vehiclesManager = VehiclesManager(simulationWorld.NUMBER_OF_CARS)
@@ -31,8 +31,8 @@ vehiclesManager = VehiclesManager(simulationWorld.NUMBER_OF_CARS)
 clock = pygame.time.Clock()
 
 #dataManager
-# dataManager = DataManager(filename='simulation_data.xlsx', export_interval=2)
-# next_stat_update = pygame.time.get_ticks() + dataManager.export_interval * 1000  # Convert seconds to milliseconds
+dataManager = DataManager(filename='simulation_data.xlsx', export_interval=2)
+next_stat_update = pygame.time.get_ticks() + dataManager.export_interval * 1000  # Convert seconds to milliseconds
 
 
 while simulationRunning:
@@ -40,8 +40,8 @@ while simulationRunning:
     screen.blit(road.laneImages[road.currNumOfLanes * 2 - 1], road.imagesPositions[road.currNumOfLanes * 2 - 1]) #TODO renove this late, this is for testing only
     
     vehiclesManager.add_vehicles(road.allLanesInRoad, simulationWorld) #TODO check why this doesnt work
-    # updateCarPos(vehiclesManager.vehicles, simulationWorld, dataManager)
-    updateCarPos(vehiclesManager.vehicles, simulationWorld, road)
+    updateCarPos(vehiclesManager.vehicles, simulationWorld, dataManager, road)
+    #updateCarPos(vehiclesManager.vehicles, simulationWorld, road)
     VehicleDrawer.draw_vehicles(vehiclesManager.vehicles, screen)
     vehiclesManager.remove_vehicles(road.allLanesInRoad)
 
