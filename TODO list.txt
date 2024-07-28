@@ -1,24 +1,34 @@
-in VehicleManager.add_vehicles:
-    check how to measure distance correctly to insert a new car
+@seanbar2000 :
 
-add initial angle to each vehicle (can calculate from path[0] and path[1])
-    add angle variable to vehicle?
+create new road pictures (e.g. two-way straight road with a continous seperating line! currently we incorrectly use the one-way straight road pictures)
+    scale road pictures and put in the correct place on the screen!!!!
 
-scale road pictures and put in the correct place on the screen!!!!
 
-change all the drawRoad, drawCar functions in main.py (possibly delete them and write new functions)
+
+@orenlan1 :
 
 create new road types - curve, plus-junction, T-junction (maybe juncion class and then inheritence?)
     when adding a new road type: 
         add data to JSON
         add RoadBuilder method to read from JSON (like RoadBuilder.straight_road_read_lanes_from_file)
 
-CREATE, FIX AND IMPROVE VEHICLE'S AI MODEL!!!!!!11!1111!!1!!1
-    add acident detection to get_all_harazds_around_vehicle
-    complete Vehicle.get_vehicle_ahead()
 
-move main.drawCar ro drawings\vehicle.drawer.py
 
-add usere interface with scrollers, buttons and stuff like that to allow users to controll the environment variables 
+@Yuvallacher :
+
+CREATE, FIX AND IMPROVE VEHICLE'S AI MODEL!!!!!!11!1111!!1!!1 
+    fix deceleration distance / timing
+    add lane switch
+    add politeness coefficient to truck and car, truck is more polite
+    add awareness to world
+        add awareness coefficient to truck and car, truck is more aware
+    
+
+
+@orenlan1 @seanbar2000 @Yuvallacher :
 
 add documentation to difficult to understand function (in the """ comment """ way)
+
+change all the drawRoad, drawCar functions in main.py (possibly delete them and write new functions)
+
+add user interface with scrollers, buttons and stuff like that to allow users to controll the environment variables

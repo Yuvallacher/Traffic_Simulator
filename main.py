@@ -17,7 +17,8 @@ simulationRunning = True
 
 def updateCarPos(vehicles: list[Vehicle], simulationWorld : World, dataManager : DataManager, road : Road): #TODO probably move to a different place
     for vehicle in vehicles:
-        vehicle.accelerateAndBreak(vehicles, simulationWorld, dataManager, road)
+        #vehicle.accelerateAndBreak(vehicles, simulationWorld, dataManager, road)
+        vehicle.drive(vehicles, simulationWorld, dataManager, road)
 
 # # just for testing
 # def updateCarPos(vehicles: list[Vehicle], simulationWorld : World, road : Road): #TODO probably move to a different place

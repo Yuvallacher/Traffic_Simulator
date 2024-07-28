@@ -41,14 +41,14 @@ class VehiclesManager:
                             driveAngle = -math.degrees(math.atan2(initialDirection.y, initialDirection.x))
                             #coordinates = Vector2(-simulationWorld.maxSpeed, lane.y) # TODO think how to move to start of road 
                             directionIndex = allLanesInRoad.index(direction)
-                            newVehicleLane = direction.index(lane)
+                            laneIndex = direction.index(lane)
                             car_probability = random.uniform(0, 1)
                             if car_probability >= TRUCK_PROBABILITY:
                                 image = VehicleDrawer.get_car_image()
-                                newVehicle = Car(vehicleCoordinates, directionIndex, newVehicleLane, driveAngle, image, speed=simulationWorld.MAX_SPEED)
+                                newVehicle = Car(vehicleCoordinates, directionIndex, laneIndex, driveAngle, image, speed=simulationWorld.MAX_SPEED)
                             else:
                                 image = VehicleDrawer.get_truck_image()
-                                newVehicle = Truck(vehicleCoordinates, directionIndex, newVehicleLane, driveAngle, image, speed=simulationWorld.MAX_SPEED)
+                                newVehicle = Truck(vehicleCoordinates, directionIndex, laneIndex, driveAngle, image, speed=simulationWorld.MAX_SPEED)
                             newVehicle.setDesiredSpeed(simulationWorld.MAX_SPEED)
                             self.vehicles.append(newVehicle)
                         

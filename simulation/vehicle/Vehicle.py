@@ -7,6 +7,7 @@ from numpy.random import normal
 from pygame.math import Vector2
 from pygame import transform
 from pygame import Surface
+from pygame.rect import Rect
 import random
 import math
 
@@ -36,7 +37,7 @@ class Vehicle:
         """
         scan the surroundings, compute the next decision and execute it
         """
-        allHazards = self.get_all_harazds_around_vehicle(allVehicles, road, world.POLITENESS, dataManager)
+        allHazards = self.get_all_harazds_around_vehicle(allVehicles, road, dataManager)
         if not self.inAccident:
             self.make_next_desicion(road, world, allHazards, dataManager)
         
@@ -45,7 +46,10 @@ class Vehicle:
         """
         compute and execute the next decision based on the surroindings
         """
-        self.upgradedAccelerateAndBreak(allHazards['vehicle_ahead'], dataManager) 
+        self.upgradedAccelerateAndBreak(allHazards['vehicle_ahead'], world.POLITENESS)
+        
+        nextTargetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex + 1)
+        self.update_vehicle_location(nextTargetPosition, self.speed) # TODO add target position somehow
         
         #TODO implement lane swap
         #TODO implement decision
@@ -79,36 +83,9 @@ class Vehicle:
     def setDesiredSpeed(self, maxSpeed : int):
         self.desiredSpeed = PixelsConverter.convert_speed_to_pixels_per_frames(self.speedCoefficient * maxSpeed)
     
+   
     
-    def checkDistance(self, other_vehicles : list['Vehicle'], world: World, dataManager : DataManager):
-        back_of_vehicle = self.location.x
-        front_of_vehicle = self.location.x + self.length
-        minimal_distance = 10 + world.POLITENESS * 10
-
-        for other_vehicle in other_vehicles:
-            if self != other_vehicle:
-                if self.currentLaneIndex == other_vehicle.currentLaneIndex:
-                    back_of_other_vehicle = other_vehicle.location.x - 3
-                    front_of_other_vehicle = other_vehicle.location.x + other_vehicle.length
-                    # start of accidents detection
-                    if front_of_vehicle >= back_of_other_vehicle + 3 and back_of_vehicle <= front_of_other_vehicle:
-                        if not (self.inAccident and other_vehicle.inAccident):
-                            dataManager.log_accident(type(self).__name__, type(other_vehicle).__name__, PixelsConverter.convert_pixels_per_frames_to_speed(self.speed), PixelsConverter.convert_pixels_per_frames_to_speed(other_vehicle.speed))
-                        self.inAccident = True
-                        self.speed = 0
-                        other_vehicle.inAccident = True
-                        other_vehicle.speed = 0
-                        return False
-                    # end of accident detection
-                    if front_of_vehicle < back_of_other_vehicle or front_of_vehicle < front_of_other_vehicle:
-                        distance = back_of_other_vehicle - front_of_vehicle
-                        if distance < minimal_distance:
-                            return False
-
-        return True
-    
-    
-    def get_all_harazds_around_vehicle(self, allVehicles : list['Vehicle'], road : Road, politeness : int, dataManager : DataManager) -> dict:
+    def get_all_harazds_around_vehicle(self, allVehicles : list['Vehicle'], road : Road, dataManager : DataManager) -> dict:
         """
         The vehicle scans its sorroundings for hazards, oncoming traffic, and other variables that can influence the driver's decision
         """
@@ -120,23 +97,23 @@ class Vehicle:
         
         targetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex)
         if self.targetPositionIndex <= 3 or targetPosition == self.location :
-            return
-        direction = (targetPosition - self.location).normalize()
+            return surroundings
+        direction = (self.location - targetPosition).normalize()
 
         #TODO: more checks for surroundings like hazards, turns, etc.
         # fieldOfView = QuadCalculation.create_quad(self.rotatedImage.get_rect())
                 
         for other_vehicle in allVehicles:
             if self != other_vehicle:
-                # if self.rotatedImage.get_rect().colliderect(other_vehicle.rotatedImage.get_rect()):
-                #     if not (self.inAccident and other_vehicle.inAccident):
-                #         dataManager.log_accident(type(self).__name__, type(other_vehicle).__name__, PixelsConverter.convert_pixels_per_frames_to_speed(self.speed), PixelsConverter.convert_pixels_per_frames_to_speed(other_vehicle.speed))
-                #     self.inAccident = True
-                #     self.speed = 0
-                #     other_vehicle.inAccident = True
-                #     other_vehicle.speed = 0
-                #     return
-                # else:
+                if self.rect.colliderect(other_vehicle.rect):
+                    if not (self.inAccident and other_vehicle.inAccident):
+                        dataManager.log_accident(type(self).__name__, type(other_vehicle).__name__, PixelsConverter.convert_pixels_per_frames_to_speed(self.speed), PixelsConverter.convert_pixels_per_frames_to_speed(other_vehicle.speed))
+                    self.inAccident = True
+                    self.speed = 0
+                    other_vehicle.inAccident = True
+                    other_vehicle.speed = 0
+                    return surroundings
+                else:
                     frontFov = self.create_fov_boundary(direction, -30, 30, 200)
                     leftSideFov = self.create_fov_boundary(direction, -120, -30, 60)                    
                     rightSideFov = self.create_fov_boundary(direction, 30, 120, 60)
@@ -181,9 +158,6 @@ class Vehicle:
         return cross_left >= 0 and cross_right <= 0 and objectToVehicleVector.length() <= fovDistance
 
 
-<<<<<<< HEAD
-    # TODO remove from comment!!
-=======
     def get_vehicle_ahead(self, allVehiclesInFront : list['Vehicle'], road : Road) -> 'Vehicle':
         if len(allVehiclesInFront) == 0:
             return None
@@ -205,10 +179,8 @@ class Vehicle:
                                 currentVehicleAhead = vehicle
             return currentVehicleAhead                    
                                 
-
                 
         #TODO implement method to get the closest vehicle from the front and in the same lane (same currentLaneIndex)
->>>>>>> 064e87fc4cdcad441a6806e8ded666c22d676637
     
     # def get_vehicle_ahead(self, allVehiclesInFieldOfView : list['Vehicle'], road : Road) -> 'Vehicle':
     #     direction = road[self.directionIndex][self.currentLaneIndex].path[self.targetPositionIndex] - self.location
@@ -267,10 +239,12 @@ class Vehicle:
 
 
 
-    def upgradedAccelerateAndBreak(self, vehicleAhead : 'Vehicle', dataManager : DataManager):
+    def upgradedAccelerateAndBreak(self, vehicleAhead : 'Vehicle', politeness : int):
         """
         Caculates and updates a vehicle's speed according to the road's conditions - other vehicles, hazards, etc.
         """
+        minimal_distance = 10 + politeness * 10
+        
         max_acceleration = 2  
         max_deceleration = -5 
 
@@ -280,7 +254,7 @@ class Vehicle:
         cruising_speed_factor = 0.5 #TODO: shouldn't be a literal but related to the next vehicle's speed
         cruising_speed = self.desiredSpeed * cruising_speed_factor
 
-        clearSpaceAhead = (vehicleAhead == None)
+        clearSpaceAhead = (vehicleAhead is None)
         if clearSpaceAhead:
             acceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(acceleration_factor)
             if self.speed + acceleration_speed <= self.desiredSpeed:
@@ -288,18 +262,18 @@ class Vehicle:
             else:
                 self.speed = self.desiredSpeed
         else:
-            x = 10 # just to remove error, DELETE LINE LATER
-            # if self.inAccident == True:
-            #     self.speed = 0
-            # else:
-            #     if self.speed > cruising_speed:
-            #         deceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(deceleration_factor)
-            #         if self.speed + deceleration_speed > cruising_speed:
-            #             self.speed += deceleration_speed
-            #         else:
-            #             self.speed = cruising_speed
-            #     else:
-            #         self.speed = cruising_speed
+            distance = self.location.distance_to(vehicleAhead.location)
+            if distance <= minimal_distance:
+                if self.speed > cruising_speed:
+                    deceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(deceleration_factor)
+                    if self.speed + deceleration_speed > cruising_speed:
+                        self.speed += deceleration_speed
+                    else:
+                        self.speed = cruising_speed
+                else:
+                    self.speed = cruising_speed
+
+
 
 #---------------------Car---------------------#
 class Car(Vehicle):

@@ -12,7 +12,7 @@ class World:
 
     MAX_SPEED = 100
     FREQUENCY = 10
-    POLITENESS = 1
+    POLITENESS = 8
     PIXELS_PER_METER = 5
     
     FPS = 60
