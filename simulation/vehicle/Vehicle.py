@@ -113,10 +113,14 @@ class Vehicle:
         The vehicle scans its sorroundings for hazards, oncoming traffic, and other variables that can influence the driver's decision
         """
         surroundings = {}
-        surroundings['vehicles'] = []
+        surroundings['vehicles_front'] = []
+        surroundings['vehicles_left'] = []
+        surroundings['vehicles_right'] = []
         surroundings['vehicle_ahead'] = None
-
-        targetPosition = road.get_target_position[self.directionIndex, self.currentLaneIndex, self.targetPositionIndex]
+        
+        targetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex)
+        if self.targetPositionIndex <= 3 or targetPosition == self.location :
+            return
         direction = (targetPosition - self.location).normalize()
 
         #TODO: more checks for surroundings like hazards, turns, etc.
@@ -124,40 +128,47 @@ class Vehicle:
                 
         for other_vehicle in allVehicles:
             if self != other_vehicle:
-                if self.rotatedImage.get_rect().colliderect(other_vehicle.rotatedImage.get_rect()):
-                    if not (self.inAccident and other_vehicle.inAccident):
-                        dataManager.log_accident(type(self).__name__, type(other_vehicle).__name__, PixelsConverter.convert_pixels_per_frames_to_speed(self.speed), PixelsConverter.convert_pixels_per_frames_to_speed(other_vehicle.speed))
-                    self.inAccident = True
-                    self.speed = 0
-                    other_vehicle.inAccident = True
-                    other_vehicle.speed = 0
-                    return
-                else:
-                    frontFov = self.create_fov_boundary(direction, leftAngle=-30, rightAngle=30, fovDistance=200)
-                    leftSideFov = self.create_fov_boundary(direction, leftAngle=-120, rightAngle=-30, fovDistance=45)                    
-                    rightSideFov = self.create_fov_boundary(direction, leftAngle=30, rightAngle=120, fovDistance=45)                    
-        
+                # if self.rotatedImage.get_rect().colliderect(other_vehicle.rotatedImage.get_rect()):
+                #     if not (self.inAccident and other_vehicle.inAccident):
+                #         dataManager.log_accident(type(self).__name__, type(other_vehicle).__name__, PixelsConverter.convert_pixels_per_frames_to_speed(self.speed), PixelsConverter.convert_pixels_per_frames_to_speed(other_vehicle.speed))
+                #     self.inAccident = True
+                #     self.speed = 0
+                #     other_vehicle.inAccident = True
+                #     other_vehicle.speed = 0
+                #     return
+                # else:
+                    frontFov = self.create_fov_boundary(direction, -30, 30, 200)
+                    leftSideFov = self.create_fov_boundary(direction, -120, -30, 60)                    
+                    rightSideFov = self.create_fov_boundary(direction, 30, 120, 60)
+                    if self.is_object_in_fov(other_vehicle.location, frontFov[0], frontFov[1], 200):
+                        surroundings['vehicles_front'].append(other_vehicle)
+                    elif self.is_object_in_fov(other_vehicle.location, leftSideFov[0], leftSideFov[1], 60):
+                        surroundings['vehicles_left'].append(other_vehicle)
+                    elif self.is_object_in_fov(other_vehicle.location, rightSideFov[0], rightSideFov[1], 60):
+                        surroundings['vehicles_right'].append(other_vehicle)
+
+
         #         elif QuadCalculation.point_in_quad(other_vehicle.location, fieldOfView):
         #             surroundings['vehicles'].append(other_vehicle)
                     
                 
-        # surroundings['vehicle_ahead'] = self.get_vehicle_ahead(surroundings['vehicles'], road)
+        surroundings['vehicle_ahead'] = self.get_vehicle_ahead(surroundings['vehicles_front'], road)
         return surroundings
     
-    def create_fov_boundary_222222(center : Vector2, corner1 : Vector2, corner2 : Vector2) -> tuple[Vector2, Vector2]:
-        leftBoundary = (corner1 - center)
-        rightBoundary = (corner2 - center)
+    # def create_fov_boundary_222222(center : Vector2, corner1 : Vector2, corner2 : Vector2) -> tuple[Vector2, Vector2]:
+    #     leftBoundary = (corner1 - center)
+    #     rightBoundary = (corner2 - center)
         
-        return (leftBoundary, rightBoundary)
+    #     return (leftBoundary, rightBoundary)
     
-    def is_object_in_fov_2222222(self, objectLocation : Vector2, leftBoundary : Vector2, rightBoundary : Vector2, vehicleBorder :Vector2, fovDistance : int):
-        objectToVehicleVector = objectLocation - vehicleBorder
-        cross_left = leftBoundary.cross(objectToVehicleVector)
-        cross_right = rightBoundary.cross(objectToVehicleVector)
-        return cross_left >= 0 and cross_right <= 0 and objectToVehicleVector.length() <= fovDistance
+    # def is_object_in_fov_2222222(self, objectLocation : Vector2, leftBoundary : Vector2, rightBoundary : Vector2, vehicleBorder :Vector2, fovDistance : int):
+    #     objectToVehicleVector = objectLocation - vehicleBorder
+    #     cross_left = leftBoundary.cross(objectToVehicleVector)
+    #     cross_right = rightBoundary.cross(objectToVehicleVector)
+    #     return cross_left >= 0 and cross_right <= 0 and objectToVehicleVector.length() <= fovDistance
     
 
-    def create_fov_boundary(direction : Vector2, leftAngle : float, rightAngle : float, fovDistance : int):
+    def create_fov_boundary(self, direction : Vector2, leftAngle : float, rightAngle : float, fovDistance : int):
         left_boundary = direction.rotate(leftAngle) * fovDistance
         right_boundary = direction.rotate(rightAngle) * fovDistance
         return (left_boundary, right_boundary)
@@ -170,20 +181,27 @@ class Vehicle:
         return cross_left >= 0 and cross_right <= 0 and objectToVehicleVector.length() <= fovDistance
 
 
-    def get_vehicle_ahead(self, allVehiclesInFieldOfView : list['Vehicle'], road : Road) -> 'Vehicle':
-        direction = road[self.directionIndex][self.currentLaneIndex].path[self.targetPositionIndex] - self.location
-        targetPositionVector = road[self.directionIndex][self.currentLaneIndex].path[self.targetPositionIndex]
-        pathDirection = 
-        if len(allVehiclesInFieldOfView) == 0:
+    def get_vehicle_ahead(self, allVehiclesInFront : list['Vehicle'], road : Road) -> 'Vehicle':
+        if len(allVehiclesInFront) == 0:
             return None
         else:
             currentVehicleAhead = None
             minDistance = 0
-            for vehicle in allVehiclesInFieldOfView:
-                if (self.directionIndex == vehicle.directionIndex):
-                    if ( self.currentLaneIndex == vehicle.currentLaneIndex or self.currentLaneIndex == vehicle.desiredLaneIndex):
-                        distance = self.location.distance_to(vehicle.location)
-                        vehicleProjection =     
+            first = True
+            for vehicle in allVehiclesInFront:
+                if self.directionIndex == vehicle.directionIndex:
+                    if self.currentLaneIndex == vehicle.currentLaneIndex or self.currentLaneIndex == vehicle.desiredLaneIndex:
+                         distance = self.location.distance_to(vehicle.location)
+                         if first == True:
+                            minDistance = distance
+                            currentVehicleAhead = vehicle
+                            first = False
+                         else:
+                             if distance < minDistance:
+                                minDistance = distance
+                                currentVehicleAhead = vehicle
+            return currentVehicleAhead                    
+                                
 
                 
         #TODO implement method to get the closest vehicle from the front and in the same lane (same currentLaneIndex)
@@ -204,6 +222,7 @@ class Vehicle:
         cruising_speed = self.desiredSpeed * cruising_speed_factor
 
         clear_space_ahead = self.checkDistance(other_vehicles, world, dataManager)
+        dictionary = self.get_all_harazds_around_vehicle(other_vehicles,road,world.POLITENESS,dataManager)
         if clear_space_ahead:
             acceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(acceleration_factor)
             if self.speed + acceleration_speed <= self.desiredSpeed:
