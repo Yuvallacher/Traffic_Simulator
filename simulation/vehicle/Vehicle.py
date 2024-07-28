@@ -170,24 +170,23 @@ class Vehicle:
         return cross_left >= 0 and cross_right <= 0 and objectToVehicleVector.length() <= fovDistance
 
 
-    def get_vehicle_ahead(self, allVehiclesInFieldOfView : list['Vehicle'], road : Road) -> 'Vehicle':
-        direction = road[self.directionIndex][self.currentLaneIndex].path[self.targetPositionIndex] - self.location
-        targetPositionVector = road[self.directionIndex][self.currentLaneIndex].path[self.targetPositionIndex]
-        pathDirection = 
-        if len(allVehiclesInFieldOfView) == 0:
-            return None
-        else:
-            currentVehicleAhead = None
-            minDistance = 0
-            for vehicle in allVehiclesInFieldOfView:
-                if (self.directionIndex == vehicle.directionIndex):
-                    if ( self.currentLaneIndex == vehicle.currentLaneIndex or self.currentLaneIndex == vehicle.desiredLaneIndex):
-                        distance = self.location.distance_to(vehicle.location)
-                        vehicleProjection =     
-
-                
-        #TODO implement method to get the closest vehicle from the front and in the same lane (same currentLaneIndex)
+    # TODO remove from comment!!
     
+    # def get_vehicle_ahead(self, allVehiclesInFieldOfView : list['Vehicle'], road : Road) -> 'Vehicle':
+    #     direction = road[self.directionIndex][self.currentLaneIndex].path[self.targetPositionIndex] - self.location
+    #     targetPositionVector = road[self.directionIndex][self.currentLaneIndex].path[self.targetPositionIndex]
+    #     pathDirection = 
+    #     if len(allVehiclesInFieldOfView) == 0:
+    #         return None
+    #     else:
+    #         currentVehicleAhead = None
+    #         minDistance = 0
+    #         for vehicle in allVehiclesInFieldOfView:
+    #             if (self.directionIndex == vehicle.directionIndex):
+    #                 if ( self.currentLaneIndex == vehicle.currentLaneIndex or self.currentLaneIndex == vehicle.desiredLaneIndex):
+    #                     distance = self.location.distance_to(vehicle.location)
+    #                     vehicleProjection =     
+  
     
     def accelerateAndBreak(self, other_vehicles : list['Vehicle'], world: World, dataManager : DataManager, road : Road):
         """
