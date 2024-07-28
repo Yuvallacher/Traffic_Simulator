@@ -178,7 +178,7 @@ while running:
     fov_distance = 200  # pixels
 
     # Check if mouse position is within the FOV
-    if is_point_in_fov(mouse_pos, car_pos, direction, -90, -120, fov_distance):
+    if is_point_in_fov(mouse_pos, car_pos, direction, -120, -90, fov_distance):
         color = green
     else:
         color = red
