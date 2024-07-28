@@ -23,10 +23,10 @@ class Road:
             self.currNumOfLanes -= 1
             # TODO remove all vehicles on deleted lane
         
-    def get_next_target_position(self, directionIndex : int, laneIndex : int, currentTargetPositionIndex : int) -> Vector2:
+    def get_target_position(self, directionIndex : int, laneIndex : int, currentTargetPositionIndex : int) -> Vector2:
         path = self.allLanesInRoad[directionIndex][laneIndex].path
         if currentTargetPositionIndex + 1 < len(path):
-            return path[currentTargetPositionIndex + 1] #TODO maybe change +1 to take speed into consideration
+            return path[currentTargetPositionIndex] #TODO maybe change +1 to take speed into consideration
         else:
             return path[-1]
 

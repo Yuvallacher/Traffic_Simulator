@@ -115,8 +115,12 @@ class Vehicle:
         surroundings = {}
         surroundings['vehicles'] = []
         surroundings['vehicle_ahead'] = None
+
+        targetPosition = road.get_target_position[self.directionIndex, self.currentLaneIndex, self.targetPositionIndex]
+        direction = (targetPosition - self.location).normalize()
+
         #TODO: more checks for surroundings like hazards, turns, etc.
-        fieldOfView = QuadCalculation.create_quad(self.rotatedImage.get_rect())
+        # fieldOfView = QuadCalculation.create_quad(self.rotatedImage.get_rect())
                 
         for other_vehicle in allVehicles:
             if self != other_vehicle:
@@ -128,28 +132,60 @@ class Vehicle:
                     other_vehicle.inAccident = True
                     other_vehicle.speed = 0
                     return
-                elif QuadCalculation.point_in_quad(other_vehicle.location, fieldOfView):
-                    surroundings['vehicles'].append(other_vehicle)
+                else:
+                    frontFov = self.create_fov_boundary(direction, leftAngle=-30, rightAngle=30, fovDistance=200)
+                    leftSideFov = self.create_fov_boundary(direction, leftAngle=-120, rightAngle=-30, fovDistance=45)                    
+                    rightSideFov = self.create_fov_boundary(direction, leftAngle=30, rightAngle=120, fovDistance=45)                    
+        
+        #         elif QuadCalculation.point_in_quad(other_vehicle.location, fieldOfView):
+        #             surroundings['vehicles'].append(other_vehicle)
                     
-                # if self.lane == other_vehicle.lane:
-                #     back_of_other_vehicle = other_vehicle.location.x - 3
-                #     front_of_other_vehicle = other_vehicle.location.x + other_vehicle.length
-                #     if front_of_vehicle < back_of_other_vehicle or front_of_vehicle < front_of_other_vehicle:
-                #         distance = back_of_other_vehicle - front_of_vehicle
-                #         if distance < minimal_distance:
-                #             surroundings['vehicles'].append(other_vehicle)
-
-        surroundings['vehicle_ahead'] = self.get_vehicle_ahead(surroundings['vehicles'])
+                
+        # surroundings['vehicle_ahead'] = self.get_vehicle_ahead(surroundings['vehicles'], road)
         return surroundings
     
+    def create_fov_boundary_222222(center : Vector2, corner1 : Vector2, corner2 : Vector2) -> tuple[Vector2, Vector2]:
+        leftBoundary = (corner1 - center)
+        rightBoundary = (corner2 - center)
         
-    def get_vehicle_ahead(self, allVehiclesInFieldOfView : list['Vehicle']) -> 'Vehicle':
+        return (leftBoundary, rightBoundary)
+    
+    def is_object_in_fov_2222222(self, objectLocation : Vector2, leftBoundary : Vector2, rightBoundary : Vector2, vehicleBorder :Vector2, fovDistance : int):
+        objectToVehicleVector = objectLocation - vehicleBorder
+        cross_left = leftBoundary.cross(objectToVehicleVector)
+        cross_right = rightBoundary.cross(objectToVehicleVector)
+        return cross_left >= 0 and cross_right <= 0 and objectToVehicleVector.length() <= fovDistance
+    
+
+    def create_fov_boundary(direction : Vector2, leftAngle : float, rightAngle : float, fovDistance : int):
+        left_boundary = direction.rotate(leftAngle) * fovDistance
+        right_boundary = direction.rotate(rightAngle) * fovDistance
+        return (left_boundary, right_boundary)
+
+
+    def is_object_in_fov(self, objectLocation : Vector2, leftBoundary : Vector2, rightBoundary : Vector2, fovDistance : int):
+        objectToVehicleVector = objectLocation - self.location
+        cross_left = leftBoundary.cross(objectToVehicleVector)
+        cross_right = rightBoundary.cross(objectToVehicleVector)
+        return cross_left >= 0 and cross_right <= 0 and objectToVehicleVector.length() <= fovDistance
+
+
+    def get_vehicle_ahead(self, allVehiclesInFieldOfView : list['Vehicle'], road : Road) -> 'Vehicle':
+        direction = road[self.directionIndex][self.currentLaneIndex].path[self.targetPositionIndex] - self.location
+        targetPositionVector = road[self.directionIndex][self.currentLaneIndex].path[self.targetPositionIndex]
+        pathDirection = 
         if len(allVehiclesInFieldOfView) == 0:
             return None
         else:
             currentVehicleAhead = None
+            minDistance = 0
             for vehicle in allVehiclesInFieldOfView:
-                x = 10
+                if (self.directionIndex == vehicle.directionIndex):
+                    if ( self.currentLaneIndex == vehicle.currentLaneIndex or self.currentLaneIndex == vehicle.desiredLaneIndex):
+                        distance = self.location.distance_to(vehicle.location)
+                        vehicleProjection =     
+
+                
         #TODO implement method to get the closest vehicle from the front and in the same lane (same currentLaneIndex)
     
     
@@ -187,7 +223,7 @@ class Vehicle:
                 else:
                     self.speed = cruising_speed
         
-        nextTargetPosition = road.get_next_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex)
+        nextTargetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex + 1)
         self.update_vehicle_location(nextTargetPosition, self.speed) # TODO add target position somehow
         
 
