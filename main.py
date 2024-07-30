@@ -46,10 +46,10 @@ while simulationRunning:
     VehicleDrawer.draw_vehicles(vehiclesManager.vehicles, screen)
     vehiclesManager.remove_vehicles(road.allLanesInRoad)
 
-    # current_time = pygame.time.get_ticks()
-    # if current_time >= next_stat_update:
-    #     dataManager.update_stats(vehiclesManager.vehicles)
-    #     next_stat_update = current_time + dataManager.export_interval * 1000
+    current_time = pygame.time.get_ticks()
+    if current_time >= next_stat_update:
+        dataManager.update_stats(vehiclesManager.vehicles)
+        next_stat_update = current_time + dataManager.export_interval * 1000
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
