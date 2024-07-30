@@ -110,8 +110,10 @@ class Vehicle:
                         dataManager.log_accident(type(self).__name__, type(other_vehicle).__name__, PixelsConverter.convert_pixels_per_frames_to_speed(self.speed), PixelsConverter.convert_pixels_per_frames_to_speed(other_vehicle.speed))
                     self.inAccident = True
                     self.speed = 0
+                    self.desiredSpeed = 0
                     other_vehicle.inAccident = True
                     other_vehicle.speed = 0
+                    other_vehicle.desiredSpeed = 0
                     return surroundings
                 else:
                     frontFov = self.create_fov_boundary(direction, -30, 30, 200)
@@ -239,20 +241,65 @@ class Vehicle:
 
 
 
-    def upgradedAccelerateAndBreak(self, vehicleAhead : 'Vehicle', politeness : int):
+    # def upgradedAccelerateAndBreak(self, vehicleAhead : 'Vehicle', politeness : int):
+    #     """
+    #     Caculates and updates a vehicle's speed according to the road's conditions - other vehicles, hazards, etc.
+    #     """
+    #     minimal_distance = 10 + politeness * 10
+        
+    #     max_acceleration = 2  
+    #     max_deceleration = -5 
+
+    #     acceleration_factor = max_acceleration / self.weight
+    #     deceleration_factor = max_deceleration / self.weight
+
+    #     cruising_speed_factor = 0.5 #TODO: shouldn't be a literal but related to the next vehicle's speed
+    #     cruising_speed = self.desiredSpeed * cruising_speed_factor
+
+    #     clearSpaceAhead = (vehicleAhead is None)
+    #     if clearSpaceAhead:
+    #         acceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(acceleration_factor)
+    #         if self.speed + acceleration_speed <= self.desiredSpeed:
+    #             self.speed += acceleration_speed
+    #         else:
+    #             self.speed = self.desiredSpeed
+    #     else:
+    #         # distance = self.location.distance_to(vehicleAhead.location)
+    #         # if distance <= minimal_distance:
+    #         #     if self.speed > cruising_speed:
+    #         #         deceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(deceleration_factor)
+    #         #         if self.speed + deceleration_speed > cruising_speed:
+    #         #             self.speed += deceleration_speed
+    #         #         else:
+    #         #             self.speed = cruising_speed
+    #         #     else:
+    #         #         self.speed = cruising_speed
+    #         v = self.speed
+    #         s = self.location.distance_to(vehicleAhead.location) - 20
+    #         delta_v = self.speed - vehicleAhead.speed
+    #         min_distance = 40
+    #         reaction_time = 1
+    #         comfortable_deceleration = 4
+    #         delta = 4
+    #         # Desired minimum gap
+    #         s_star = min_distance + v * reaction_time + (v * delta_v) / (2 * (max_acceleration * comfortable_deceleration)**0.5)
+
+    #         # Acceleration
+    #         acceleration = max_acceleration * (1 - (v / self.desiredSpeed)**delta - (s_star / s)**2)
+    #         self.speed += acceleration * 0.0167
+
+
+    def upgradedAccelerateAndBreak(self, vehicleAhead: 'Vehicle', politeness: int):
         """
-        Caculates and updates a vehicle's speed according to the road's conditions - other vehicles, hazards, etc.
+        Calculates and updates a vehicle's speed according to the road's conditions - other vehicles, hazards, etc.
         """
-        minimal_distance = 10 + politeness * 10
+        minimal_distance = 10 + politeness * 3
         
         max_acceleration = 2  
-        max_deceleration = -5 
+        # max_deceleration = -5 
 
         acceleration_factor = max_acceleration / self.weight
-        deceleration_factor = max_deceleration / self.weight
-
-        cruising_speed_factor = 0.5 #TODO: shouldn't be a literal but related to the next vehicle's speed
-        cruising_speed = self.desiredSpeed * cruising_speed_factor
+        # deceleration_factor = max_deceleration / self.weight
 
         clearSpaceAhead = (vehicleAhead is None)
         if clearSpaceAhead:
@@ -262,16 +309,34 @@ class Vehicle:
             else:
                 self.speed = self.desiredSpeed
         else:
-            distance = self.location.distance_to(vehicleAhead.location)
-            if distance <= minimal_distance:
-                if self.speed > cruising_speed:
-                    deceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(deceleration_factor)
-                    if self.speed + deceleration_speed > cruising_speed:
-                        self.speed += deceleration_speed
-                    else:
-                        self.speed = cruising_speed
+            v = self.speed
+            d = self.location.distance_to(vehicleAhead.location) - 20
+            delta_v = self.speed - vehicleAhead.speed
+            reaction_time = 0.38
+            comfortable_deceleration = 3
+            delta = 4
+
+            # Desired minimum gap
+            s_star = minimal_distance + v * reaction_time + (v * delta_v) / (2 * (max_acceleration * comfortable_deceleration)**0.5)
+           
+            # Acceleration
+            if d > s_star:  # Prevent division by zero
+                if vehicleAhead.speed != 0:
+                    acceleration = max_acceleration * (1 - (v / vehicleAhead.speed)**delta - (s_star / d)**2)
                 else:
-                    self.speed = cruising_speed
+                    acceleration = max_acceleration * (1 - (v / self.desiredSpeed)**delta - (s_star / d)**2)
+            else:
+                acceleration = -comfortable_deceleration  # Decelerate if too close
+           
+            self.speed += acceleration * 0.0167
+
+
+            # if vehicleAhead.speed > self.speed:
+            #     self.speed = vehicleAhead.speed - PixelsConverter.convert_speed_to_pixels_per_frames(5)
+
+            # Ensure speed is not negative
+            self.speed = max(self.speed, 0)
+
 
 
 
