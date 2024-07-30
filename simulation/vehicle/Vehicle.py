@@ -17,10 +17,14 @@ TRUCK_AVG_SPEED = 0.8
 TRUCK_STANDARD_DEVIATION = 0.09
 
 class Vehicle:
-    def __init__(self, location : Vector2, speedCoefficient : float, directionIndex : int, currentLaneIndex : int, driveAngle : float, image : Surface ,speed=60):
+    def __init__(self, location : Vector2, speedCoefficient : float, directionIndex : int, currentLaneIndex : int, driveAngle : float, image : Surface, width : int, length : int, speed=60):
         self.location = location
         self.speed = PixelsConverter.convert_speed_to_pixels_per_frames(speed)
         self.desiredSpeed = 0.0
+        self.width = width
+        self.length = length
+        self.widthOffset = self.width / 2
+        self.lengthOffset = self.length / 2
         self.speedCoefficient = speedCoefficient
         self.directionIndex = directionIndex
         self.currentLaneIndex = currentLaneIndex
@@ -213,7 +217,7 @@ class Vehicle:
         cruising_speed = self.desiredSpeed * cruising_speed_factor
 
         clear_space_ahead = self.checkDistance(other_vehicles, world, dataManager)
-        dictionary = self.get_all_harazds_around_vehicle(other_vehicles,road,world.POLITENESS,dataManager)
+        #dictionary = self.get_all_harazds_around_vehicle(other_vehicles,road,world.POLITENESS,dataManager)
         if clear_space_ahead:
             acceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(acceleration_factor)
             if self.speed + acceleration_speed <= self.desiredSpeed:
@@ -263,27 +267,32 @@ class Vehicle:
                 self.speed = self.desiredSpeed
         else:
             distance = self.location.distance_to(vehicleAhead.location)
-            if distance <= minimal_distance:
-                if self.speed > cruising_speed:
-                    deceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(deceleration_factor)
-                    if self.speed + deceleration_speed > cruising_speed:
-                        self.speed += deceleration_speed
-                    else:
-                        self.speed = cruising_speed
-                else:
-                    self.speed = cruising_speed
+            # if 
+            
+            # if vehicleAhead.speed <= self.speed:
+                
+            # if distance <= minimal_distance:
+            #     if self.speed > cruising_speed:
+            #         deceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(deceleration_factor)
+            #         if self.speed + deceleration_speed > cruising_speed:
+            #             self.speed += deceleration_speed
+            #         else:
+            #             self.speed = cruising_speed
+            #     else:
+            #         self.speed = cruising_speed
 
 
 
+    def is_on_same_lane(self, otherVehicle : 'Vehicle') -> bool:
+        return (self.directionIndex == otherVehicle.directionIndex) and (self.currentLaneIndex)
+        
 #---------------------Car---------------------#
 class Car(Vehicle):
     def __init__(self, location : Vector2, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface, speed=60):
         self.weight = 2
-        self.length = 30
-        self.width = 20
         self.colorIndex = random.randint(0, 4)
         speedCoefficient = normal(CAR_AVG_SPEED, CAR_STANDARD_DEVIATION)
-        super().__init__(location, speedCoefficient, directionIndex, laneIndex, driveAngle, image, speed)
+        super().__init__(location, speedCoefficient, directionIndex, laneIndex, driveAngle, image, width=20, length=30, speed=speed)
     
     
     
@@ -293,8 +302,6 @@ class Car(Vehicle):
 #--------------------Truck--------------------#
 class Truck(Vehicle):
     def __init__(self, location : Vector2, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface, speed=60):
-        self.weight = 15
-        self.length = 65
-        self.width = 20
+        self.weight = 15 #TODO add noraml distributed weight?
         speedCoefficient = normal(TRUCK_AVG_SPEED, TRUCK_STANDARD_DEVIATION)
-        super().__init__(location, speedCoefficient, directionIndex, laneIndex, driveAngle, image, speed)
+        super().__init__(location, speedCoefficient, directionIndex, laneIndex, driveAngle, image, width=20, length=60, speed=speed)
