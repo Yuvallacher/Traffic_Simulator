@@ -19,6 +19,7 @@ create new road types - curve, plus-junction, T-junction (maybe juncion class an
 CREATE, FIX AND IMPROVE VEHICLE'S AI MODEL!!!!!!11!1111!!1!!1 
     fix deceleration distance / timing
     add lane switch
+        prevent vehicles from switching lanes close to the end of the path
     add politeness coefficient to truck and car, truck is more polite
     add awareness to world
         add awareness coefficient to truck and car, truck is more aware

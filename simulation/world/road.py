@@ -29,6 +29,18 @@ class Road:
             return path[currentTargetPositionIndex] #TODO maybe change +1 to take speed into consideration
         else:
             return path[-1]
+        
+    def get_left_adjacent_lane_index(self, directionIndex : int, laneIndex : int) -> int:
+        if laneIndex == 0:
+            return None
+        else:
+            return laneIndex - 1
+
+    def get_right_adjacent_lane_index(self, directionIndex : int, laneIndex : int) -> int:
+        if laneIndex == len(self.allLanesInRoad[directionIndex]) - 1:
+            return None
+        else:
+            return laneIndex + 1
 
     class Lane:
         def __init__(self, listOfCoordinates : list[Vector2]):

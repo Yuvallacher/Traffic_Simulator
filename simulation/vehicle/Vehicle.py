@@ -34,10 +34,24 @@ class Vehicle:
         self.inAccident = False
         self.shouldSwitchLane = False
         self.activelySwitchingLane = False
+        self.finishedSwitchingLane = False
         self.driveAngle = driveAngle
+        self.frontEdgeOfVehicle = self.location + Vector2(1, 0).rotate(self.driveAngle) * self.lengthOffset
+        self.backEdgeOfVehicle = self.location + Vector2(1, 0).rotate(self.driveAngle + 180) * self.lengthOffset
+        self.rightEdgeOfVehicle = self.location + Vector2(1, 0).rotate(self.driveAngle + 90) * self.widthOffset
+        self.leftEdgeOfVehicle = self.location + Vector2(1, 0).rotate(self.driveAngle -90) * self.widthOffset
+        self.edges = [self.frontEdgeOfVehicle, self.backEdgeOfVehicle, self.rightEdgeOfVehicle, self.leftEdgeOfVehicle]
         self.originalImage = image
         self.rotatedImage = self.originalImage
         self.rect = image.get_rect()
+
+        
+    def update_vehicle_edges(self):
+        self.frontEdgeOfVehicle = self.location + Vector2(1, 0).rotate(self.driveAngle) * self.lengthOffset
+        self.backEdgeOfVehicle = self.location + Vector2(1, 0).rotate(self.driveAngle + 180) * self.lengthOffset
+        self.rightEdgeOfVehicle = self.location + Vector2(1, 0).rotate(self.driveAngle + 90) * self.widthOffset
+        self.leftEdgeOfVehicle = self.location + Vector2(1, 0).rotate(self.driveAngle -90) * self.widthOffset
+        self.edges = [self.frontEdgeOfVehicle, self.backEdgeOfVehicle, self.rightEdgeOfVehicle, self.leftEdgeOfVehicle]
 
         
     def drive(self, allVehicles : list['Vehicle'], world: World, dataManager : DataManager, road : Road):
@@ -55,7 +69,12 @@ class Vehicle:
         """
         self.accelerateAndBreak(allHazards['vehicle_ahead'], world.POLITENESS)
         
-        self.shouldSwitchLane = self.switching_lane_decision(allHazards['vehicle_ahead'])
+        if self.finishedSwitchingLane:
+            self.finishedSwitchingLane = False
+            self.shouldSwitchLane = False
+        else:
+            self.shouldSwitchLane = self.switching_lane_decision(allHazards['vehicle_ahead'])
+        
         if self.shouldSwitchLane or self.activelySwitchingLane:
             self.switch_lane(allHazards['vehicle_ahead'], allHazards['vehicles_left'], allHazards['vehicles_right'], road)
         
@@ -73,29 +92,111 @@ class Vehicle:
         """
         shouldSwitchLane = False
         
+        # if vehicleAhead is not None:
+        #     if vehicleAhead.speed < self.speed:
+        #         speedDifference = PixelsConverter.convert_pixels_per_frames_to_speed(self.speed) - PixelsConverter.convert_pixels_per_frames_to_speed(vehicleAhead.speed)
+        #         maxSpeedDifference = 35
+        #         probabilityOfSwitching = min(1.0, speedDifference / maxSpeedDifference)
+           
+        #         shouldSwitchLane = random.random() < probabilityOfSwitching
+
         if vehicleAhead is not None:
-            if vehicleAhead.speed < self.speed:
-                speedDifference = PixelsConverter.convert_pixels_per_frames_to_speed(self.speed) - PixelsConverter.convert_pixels_per_frames_to_speed(vehicleAhead.speed)
-                maxSpeedDifference = 25
-                probabilityOfSwitching = min(1.0, speedDifference / maxSpeedDifference)
-                shouldSwitchLane = random.random() < probabilityOfSwitching
-        
+            if self.desiredSpeed > vehicleAhead.speed:
+                desiredSpeed = PixelsConverter.convert_pixels_per_frames_to_speed(self.desiredSpeed)
+                vehicleAheadSpeed = PixelsConverter.convert_pixels_per_frames_to_speed(vehicleAhead.speed)
+                difference = desiredSpeed - vehicleAheadSpeed
+                if difference >= 10:
+                    # distanceToVehicleAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
+                    # if distanceToVehicleAhead > 40:
+                    shouldSwitchLane = True
+
+
         return shouldSwitchLane
     
     
-    def switch_lane(self, vehicleAhead : 'Vehicle', vechidlesLeft : list['Vehicle'], vechilesRight : list['Vehicle'], road : Road):
+    def switch_lane(self, vehicleAhead : 'Vehicle', vehiclesLeft : list['Vehicle'], vehiclesRight : list['Vehicle'], road : Road):
         """
         Actively switch lanes. This method determines to which lane the vehicle should move and set a course to that lane
         """
+
+   
+
+
+
         if self.activelySwitchingLane:
+            distanceToTarget = self.location.distance_to(road.get_target_position(self.directionIndex, self.desiredLaneIndex, self.targetPositionIndex))
+            if distanceToTarget < 10:
+                self.currentLaneIndex = self.desiredLaneIndex
+                self.activelySwitchingLane = False
+                self.finishedSwitchingLane = True
             return
         else: 
-            pass 
+            leftLaneIndex = road.get_left_adjacent_lane_index(self.directionIndex, self.currentLaneIndex)
+            rightLaneIndex = road.get_right_adjacent_lane_index(self.directionIndex, self.currentLaneIndex)
+            if leftLaneIndex is None and rightLaneIndex is None:
+                self.shouldSwitchLane = False
+            elif leftLaneIndex is not None and rightLaneIndex is not None:
+                pass    # if speed > other vehicle speed: left
+                        # else: right (keep right lane is a priority unless passing someone)
+            elif leftLaneIndex == None: # can move only to the right lane
+                self.check_for_space_in_target_lane(vehiclesRight, vehicleAhead, road, rightLaneIndex, isLeftDirection=False)
+                # closestVehicleToRight = self.get_vehicle_ahead(vehiclesRight, road)
+                # if closestVehicleToRight is None :
+                #     self.desiredLaneIndex = rightLaneIndex
+                #     self.activelySwitchingLane = True
+                #     self.targetPositionIndex += 1
+                # else:
+                #     distanceToClosestVehicleToRight = self.location.distance_to(closestVehicleToRight.location)
+                #     if distanceToClosestVehicleToRight > 80:
+                #         distanceToVehicleAhead = self.location.distance_to(vehicleAhead.location)
+                #         if distanceToVehicleAhead > 80:
+                #             self.desiredLaneIndex = rightLaneIndex
+                #             self.activelySwitchingLane = True
+                #             self.targetPositionIndex += 1
+            else: # can move to the left lane
+                # closestVehicleToLeft = self.get_vehicle_ahead(vehiclesLeft, road)
+                # if closestVehicleToLeft is None:
+                #     self.desiredLaneIndex = leftLaneIndex
+                #     self.activelySwitchingLane = True
+                #     self.targetPositionIndex += 1
+                # else:
+                #     distanceToClosestVehicleToLeft = self.location.distance_to(closestVehicleToLeft.location)
+                #     if distanceToClosestVehicleToLeft > 80:
+                #         distanceToVehicleAhead = self.location.distance_to(vehicleAhead.location)
+                #         if distanceToVehicleAhead > 80:
+                #             self.desiredLaneIndex = leftLaneIndex
+                #             self.activelySwitchingLane = True
+                #             self.targetPositionIndex += 1
+                self.check_for_space_in_target_lane(vehiclesLeft, vehicleAhead, road, leftLaneIndex, isLeftDirection=True)
             # TODO check neighboor lanes and decide which is the target. set desiredLaneIndex to that lane
             # if no lane is available, do NOT make activelySwitchingLane True. it should only become True when the actual lane switching has begun. 
             # in this scenario (no available lanes) desiredLaneIndex STAYS THE SAME and shouldSwitchLane STAYS TRUE
             
-            
+
+    def check_for_space_in_target_lane(self, vehiclesOnSide : list['Vehicle'], vehicleAhead : 'Vehicle', road : Road, targetLaneIndex : int, isLeftDirection : bool):
+        switchLane = False
+        closestVehicleToSide = self.get_vehicle_ahead(vehiclesOnSide, road)
+        distanceToVehicleInFront = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
+        
+        if closestVehicleToSide is None:          
+            # if distanceToVehicleInFront > 80:
+            switchLane = True
+        else:
+            if isLeftDirection:
+                distanceToClosestVehicleOnSide = self.location.distance_to(closestVehicleToSide.rightEdgeOfVehicle)
+            else:
+                distanceToClosestVehicleOnSide = self.location.distance_to(closestVehicleToSide.leftEdgeOfVehicle)
+            if distanceToClosestVehicleOnSide > 150:
+                # if distanceToVehicleInFront > 80:
+                switchLane = True
+        
+        if switchLane == True:
+            self.desiredLaneIndex = targetLaneIndex
+            self.activelySwitchingLane = True
+            self.targetPositionIndex += int(self.speed) + 1
+                        
+
+
     
     def update_vehicle_location(self, targetPos: Vector2, speed):
         direction = targetPos - self.location
@@ -115,6 +216,7 @@ class Vehicle:
             self.targetPositionIndex += 1
 
         self.rect.center = self.location
+        self.update_vehicle_edges()
             
             
     def rotate_vehicle(self):
@@ -160,11 +262,11 @@ class Vehicle:
                     frontFov = self.create_fov_boundary(direction, -45, 45, 200)
                     leftSideFov = self.create_fov_boundary(direction, -170, -45, 200)                    
                     rightSideFov = self.create_fov_boundary(direction, 45, 170, 200)
-                    if self.is_object_in_fov(other_vehicle.location, frontFov[0], frontFov[1], 200):
+                    if self.is_object_in_fov(other_vehicle.edges, frontFov[0], frontFov[1], 200):
                         surroundings['vehicles_front'].append(other_vehicle)
-                    elif self.is_object_in_fov(other_vehicle.location, leftSideFov[0], leftSideFov[1], 200):
+                    elif self.is_object_in_fov(other_vehicle.edges, leftSideFov[0], leftSideFov[1], 200):
                         surroundings['vehicles_left'].append(other_vehicle)
-                    elif self.is_object_in_fov(other_vehicle.location, rightSideFov[0], rightSideFov[1], 200):
+                    elif self.is_object_in_fov(other_vehicle.edges, rightSideFov[0], rightSideFov[1], 200):
                         surroundings['vehicles_right'].append(other_vehicle)                    
                 
         surroundings['vehicle_ahead'] = self.get_vehicle_ahead(surroundings['vehicles_front'], road)
@@ -178,11 +280,14 @@ class Vehicle:
         return (left_boundary, right_boundary)
 
 
-    def is_object_in_fov(self, objectLocation : Vector2, leftBoundary : Vector2, rightBoundary : Vector2, fovDistance : int):
-        objectToVehicleVector = objectLocation - self.location
-        cross_left = leftBoundary.cross(objectToVehicleVector)
-        cross_right = rightBoundary.cross(objectToVehicleVector)
-        return cross_left >= 0 and cross_right <= 0 and objectToVehicleVector.length() <= fovDistance
+    def is_object_in_fov(self, objectLocations : list[Vector2], leftBoundary : Vector2, rightBoundary : Vector2, fovDistance : int):
+        for location in objectLocations:
+            objectToVehicleVector = location - self.location
+            cross_left = leftBoundary.cross(objectToVehicleVector)
+            cross_right = rightBoundary.cross(objectToVehicleVector)
+            if cross_left >= 0 and cross_right <= 0 and objectToVehicleVector.length() <= fovDistance:
+                return True
+        return False
 
 
     def get_vehicle_ahead(self, allVehiclesInFront : list['Vehicle'], road : Road) -> 'Vehicle':
@@ -195,7 +300,8 @@ class Vehicle:
             for vehicle in allVehiclesInFront:
                 if self.directionIndex == vehicle.directionIndex:
                     if self.currentLaneIndex == vehicle.currentLaneIndex or self.currentLaneIndex == vehicle.desiredLaneIndex or self.desiredLaneIndex == vehicle.currentLaneIndex or self.desiredLaneIndex == vehicle.desiredLaneIndex:
-                         distance = self.location.distance_to(vehicle.location)
+                         #distance = self.location.distance_to(vehicle.location)
+                         distance = self.frontEdgeOfVehicle.distance_to(vehicle.backEdgeOfVehicle)
                          if first == True:
                             minDistance = distance
                             currentVehicleAhead = vehicle
@@ -277,7 +383,8 @@ class Vehicle:
                 self.speed = self.desiredSpeed
         else:
             v = self.speed
-            d = self.location.distance_to(vehicleAhead.location) - (self.lengthOffset + vehicleAhead.lengthOffset) #TODO check witch offset to add ?
+            #d = self.location.distance_to(vehicleAhead.location) - (self.lengthOffset + vehicleAhead.lengthOffset)
+            d = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
             delta_v = self.speed - vehicleAhead.speed
             reaction_time = 0.38
             comfortable_deceleration = 3
