@@ -118,9 +118,10 @@ class Vehicle:
 
         return shouldSwitchLane
     
+    
     def switching_lane_decision_2(self,vehicleAhead : 'Vehicle', vehiclesInFront : list['Vehicle'], targetLaneIndex : int) -> bool: #TODO Change function name
         shouldSwitchLane = False
-        closestFrontVehicleOnAdjacentLane = self.get_closest_vehicle_in_lane(vehiclesInFront, targetLaneIndex, "front")
+        closestFrontVehicleOnAdjacentLane = self.get_closest_vehicle(vehiclesInFront, targetLaneIndex, "front", check_all_lanes=False)
         if closestFrontVehicleOnAdjacentLane is not None:
             distance = self.frontEdgeOfVehicle.distance_to(closestFrontVehicleOnAdjacentLane.backEdgeOfVehicle)
             otherLaneVehicleSpeed = PixelsConverter.convert_pixels_per_frames_to_speed(closestFrontVehicleOnAdjacentLane.speed)
@@ -128,6 +129,8 @@ class Vehicle:
             speedDifference = otherLaneVehicleSpeed - vehicleAheadSpeed
             if speedDifference > 10 and distance > 120:
                 shouldSwitchLane = True
+        # else:
+        #     shouldSwitchLane = True
         return shouldSwitchLane                        
                                 
     
@@ -165,7 +168,7 @@ class Vehicle:
     def check_for_space_in_target_lane(self, vehiclesOnSide : list['Vehicle'], vehicleAhead : 'Vehicle', road : Road, targetLaneIndex : int, isLeftDirection : bool):
         switchLane = False
         direction = 'left' if isLeftDirection else 'right'
-        closestVehicleToSide = self.get_closest_vehicle_in_direction(vehiclesOnSide, targetLaneIndex, direction)
+        closestVehicleToSide = self.get_closest_vehicle(vehiclesOnSide, targetLaneIndex, direction, check_all_lanes=True)
         distanceToVehicleInFront = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
         
         if closestVehicleToSide is None:          
@@ -260,7 +263,7 @@ class Vehicle:
                 if self.is_object_in_fov(other_vehicle.corners, rightSideFov[0], rightSideFov[1], 200):
                     surroundings['vehicles_right'].append(other_vehicle)
                 
-        surroundings['vehicle_ahead'] = self.get_closest_vehicle_in_direction(surroundings['vehicles_front'], self.desiredLaneIndex, 'front')
+        surroundings['vehicle_ahead'] = self.get_closest_vehicle(surroundings['vehicles_front'], self.desiredLaneIndex, 'front', check_all_lanes=True)
         return surroundings
     
 
@@ -281,7 +284,7 @@ class Vehicle:
         return False
 
 
-    def get_closest_vehicle_in_direction(self, allVehiclesInDirection : list['Vehicle'], targetLaneIndex : int ,direction : str) -> 'Vehicle':
+    def get_closest_vehicle(self, allVehiclesInDirection: list['Vehicle'], targetLaneIndex: int, direction: str, check_all_lanes: bool = True) -> 'Vehicle':
         if len(allVehiclesInDirection) == 0:
             return None
         else:
@@ -295,53 +298,86 @@ class Vehicle:
                 elif direction == 'left':
                     edge = self.leftEdgeOfVehicle
                     otherVehicleEdge = vehicle.rightEdgeOfVehicle
-                else: # direction == 'right'
+                else:  # direction == 'right'
                     edge = self.rightEdgeOfVehicle
                     otherVehicleEdge = vehicle.leftEdgeOfVehicle
-                    
-                if self.directionIndex == vehicle.directionIndex:
-                    if self.currentLaneIndex == vehicle.currentLaneIndex or self.currentLaneIndex == vehicle.desiredLaneIndex or targetLaneIndex == vehicle.currentLaneIndex or targetLaneIndex == vehicle.desiredLaneIndex:
-                         distance = edge.distance_to(otherVehicleEdge)
-                         if first == True:
-                            minDistance = distance
-                            currentVehicleInDirection = vehicle
-                            first = False
-                         else:
-                             if distance < minDistance:
-                                minDistance = distance
-                                currentVehicleInDirection = vehicle
-            return currentVehicleInDirection
 
-    def get_closest_vehicle_in_lane(self, allVehiclesInDirection : list['Vehicle'], targetLaneIndex : int ,direction : str) -> 'Vehicle':
-        if len(allVehiclesInDirection) == 0:
-            return None
-        else:
-            currentVehicleInDirection = None
-            minDistance = 0
-            first = True
-            for vehicle in allVehiclesInDirection:
-                if direction == 'front':
-                    edge = self.frontEdgeOfVehicle
-                    otherVehicleEdge = vehicle.backEdgeOfVehicle
-                elif direction == 'left':
-                    edge = self.leftEdgeOfVehicle
-                    otherVehicleEdge = vehicle.rightEdgeOfVehicle
-                else: # direction == 'right'
-                    edge = self.rightEdgeOfVehicle
-                    otherVehicleEdge = vehicle.leftEdgeOfVehicle
-                    
                 if self.directionIndex == vehicle.directionIndex:
-                    if targetLaneIndex == vehicle.currentLaneIndex:
-                         distance = edge.distance_to(otherVehicleEdge)
-                         if first == True:
+                    if (check_all_lanes and (self.currentLaneIndex == vehicle.currentLaneIndex or self.currentLaneIndex == vehicle.desiredLaneIndex or targetLaneIndex == vehicle.currentLaneIndex or targetLaneIndex == vehicle.desiredLaneIndex)) or \
+                    (not check_all_lanes and targetLaneIndex == vehicle.currentLaneIndex):
+                        distance = edge.distance_to(otherVehicleEdge)
+                        if first:
                             minDistance = distance
                             currentVehicleInDirection = vehicle
                             first = False
-                         else:
-                             if distance < minDistance:
+                        else:
+                            if distance < minDistance:
                                 minDistance = distance
                                 currentVehicleInDirection = vehicle
             return currentVehicleInDirection
+    
+    # def get_closest_vehicle_in_direction(self, allVehiclesInDirection : list['Vehicle'], targetLaneIndex : int ,direction : str) -> 'Vehicle':
+    #     if len(allVehiclesInDirection) == 0:
+    #         return None
+    #     else:
+    #         currentVehicleInDirection = None
+    #         minDistance = 0
+    #         first = True
+    #         for vehicle in allVehiclesInDirection:
+    #             if direction == 'front':
+    #                 edge = self.frontEdgeOfVehicle
+    #                 otherVehicleEdge = vehicle.backEdgeOfVehicle
+    #             elif direction == 'left':
+    #                 edge = self.leftEdgeOfVehicle
+    #                 otherVehicleEdge = vehicle.rightEdgeOfVehicle
+    #             else: # direction == 'right'
+    #                 edge = self.rightEdgeOfVehicle
+    #                 otherVehicleEdge = vehicle.leftEdgeOfVehicle
+                    
+    #             if self.directionIndex == vehicle.directionIndex:
+    #                 if self.currentLaneIndex == vehicle.currentLaneIndex or self.currentLaneIndex == vehicle.desiredLaneIndex or targetLaneIndex == vehicle.currentLaneIndex or targetLaneIndex == vehicle.desiredLaneIndex:
+    #                      distance = edge.distance_to(otherVehicleEdge)
+    #                      if first == True:
+    #                         minDistance = distance
+    #                         currentVehicleInDirection = vehicle
+    #                         first = False
+    #                      else:
+    #                          if distance < minDistance:
+    #                             minDistance = distance
+    #                             currentVehicleInDirection = vehicle
+    #         return currentVehicleInDirection
+
+
+    # def get_closest_vehicle_in_lane(self, allVehiclesInDirection : list['Vehicle'], targetLaneIndex : int ,direction : str) -> 'Vehicle':
+    #     if len(allVehiclesInDirection) == 0:
+    #         return None
+    #     else:
+    #         currentVehicleInDirection = None
+    #         minDistance = 0
+    #         first = True
+    #         for vehicle in allVehiclesInDirection:
+    #             if direction == 'front':
+    #                 edge = self.frontEdgeOfVehicle
+    #                 otherVehicleEdge = vehicle.backEdgeOfVehicle
+    #             elif direction == 'left':
+    #                 edge = self.leftEdgeOfVehicle
+    #                 otherVehicleEdge = vehicle.rightEdgeOfVehicle
+    #             else: # direction == 'right'
+    #                 edge = self.rightEdgeOfVehicle
+    #                 otherVehicleEdge = vehicle.leftEdgeOfVehicle
+                    
+    #             if self.directionIndex == vehicle.directionIndex:
+    #                 if targetLaneIndex == vehicle.currentLaneIndex:
+    #                      distance = edge.distance_to(otherVehicleEdge)
+    #                      if first == True:
+    #                         minDistance = distance
+    #                         currentVehicleInDirection = vehicle
+    #                         first = False
+    #                      else:
+    #                          if distance < minDistance:
+    #                             minDistance = distance
+    #                             currentVehicleInDirection = vehicle
+    #         return currentVehicleInDirection
 
     
     def accelerateAndBreak(self, vehicleAhead: 'Vehicle', politeness: int):
