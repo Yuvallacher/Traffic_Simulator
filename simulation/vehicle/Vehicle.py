@@ -92,23 +92,15 @@ class Vehicle:
         """
         shouldSwitchLane = False
         
-        # if vehicleAhead is not None:
-        #     if vehicleAhead.speed < self.speed:
-        #         speedDifference = PixelsConverter.convert_pixels_per_frames_to_speed(self.speed) - PixelsConverter.convert_pixels_per_frames_to_speed(vehicleAhead.speed)
-        #         maxSpeedDifference = 35
-        #         probabilityOfSwitching = min(1.0, speedDifference / maxSpeedDifference)
-           
-        #         shouldSwitchLane = random.random() < probabilityOfSwitching
-
         if vehicleAhead is not None:
             if self.desiredSpeed > vehicleAhead.speed:
                 desiredSpeed = PixelsConverter.convert_pixels_per_frames_to_speed(self.desiredSpeed)
                 vehicleAheadSpeed = PixelsConverter.convert_pixels_per_frames_to_speed(vehicleAhead.speed)
                 difference = desiredSpeed - vehicleAheadSpeed
                 if difference >= 10:
-                    # distanceToVehicleAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
-                    # if distanceToVehicleAhead > 40:
-                    shouldSwitchLane = True
+                    distanceToVehicleAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
+                    if distanceToVehicleAhead < 80:
+                        shouldSwitchLane = True
 
 
         return shouldSwitchLane
@@ -118,14 +110,12 @@ class Vehicle:
         """
         Actively switch lanes. This method determines to which lane the vehicle should move and set a course to that lane
         """
-
-   
-
-
-
         if self.activelySwitchingLane:
             distanceToTarget = self.location.distance_to(road.get_target_position(self.directionIndex, self.desiredLaneIndex, self.targetPositionIndex))
-            if distanceToTarget < 10:
+            if distanceToTarget < 5:
+                targetPosition = road.get_target_position(self.directionIndex, self.desiredLaneIndex, self.targetPositionIndex)
+                self.location.update(targetPosition)
+                self.update_vehicle_edges()
                 self.currentLaneIndex = self.desiredLaneIndex
                 self.activelySwitchingLane = False
                 self.finishedSwitchingLane = True
@@ -140,42 +130,14 @@ class Vehicle:
                         # else: right (keep right lane is a priority unless passing someone)
             elif leftLaneIndex == None: # can move only to the right lane
                 self.check_for_space_in_target_lane(vehiclesRight, vehicleAhead, road, rightLaneIndex, isLeftDirection=False)
-                # closestVehicleToRight = self.get_vehicle_ahead(vehiclesRight, road)
-                # if closestVehicleToRight is None :
-                #     self.desiredLaneIndex = rightLaneIndex
-                #     self.activelySwitchingLane = True
-                #     self.targetPositionIndex += 1
-                # else:
-                #     distanceToClosestVehicleToRight = self.location.distance_to(closestVehicleToRight.location)
-                #     if distanceToClosestVehicleToRight > 80:
-                #         distanceToVehicleAhead = self.location.distance_to(vehicleAhead.location)
-                #         if distanceToVehicleAhead > 80:
-                #             self.desiredLaneIndex = rightLaneIndex
-                #             self.activelySwitchingLane = True
-                #             self.targetPositionIndex += 1
             else: # can move to the left lane
-                # closestVehicleToLeft = self.get_vehicle_ahead(vehiclesLeft, road)
-                # if closestVehicleToLeft is None:
-                #     self.desiredLaneIndex = leftLaneIndex
-                #     self.activelySwitchingLane = True
-                #     self.targetPositionIndex += 1
-                # else:
-                #     distanceToClosestVehicleToLeft = self.location.distance_to(closestVehicleToLeft.location)
-                #     if distanceToClosestVehicleToLeft > 80:
-                #         distanceToVehicleAhead = self.location.distance_to(vehicleAhead.location)
-                #         if distanceToVehicleAhead > 80:
-                #             self.desiredLaneIndex = leftLaneIndex
-                #             self.activelySwitchingLane = True
-                #             self.targetPositionIndex += 1
                 self.check_for_space_in_target_lane(vehiclesLeft, vehicleAhead, road, leftLaneIndex, isLeftDirection=True)
-            # TODO check neighboor lanes and decide which is the target. set desiredLaneIndex to that lane
-            # if no lane is available, do NOT make activelySwitchingLane True. it should only become True when the actual lane switching has begun. 
-            # in this scenario (no available lanes) desiredLaneIndex STAYS THE SAME and shouldSwitchLane STAYS TRUE
+
             
 
     def check_for_space_in_target_lane(self, vehiclesOnSide : list['Vehicle'], vehicleAhead : 'Vehicle', road : Road, targetLaneIndex : int, isLeftDirection : bool):
         switchLane = False
-        closestVehicleToSide = self.get_vehicle_ahead(vehiclesOnSide, road)
+        closestVehicleToSide = self.get_vehicle_ahead(vehiclesOnSide, road, targetLaneIndex)
         distanceToVehicleInFront = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
         
         if closestVehicleToSide is None:          
@@ -186,7 +148,7 @@ class Vehicle:
                 distanceToClosestVehicleOnSide = self.location.distance_to(closestVehicleToSide.rightEdgeOfVehicle)
             else:
                 distanceToClosestVehicleOnSide = self.location.distance_to(closestVehicleToSide.leftEdgeOfVehicle)
-            if distanceToClosestVehicleOnSide > 150:
+            if distanceToClosestVehicleOnSide > 80:
                 # if distanceToVehicleInFront > 80:
                 switchLane = True
         
@@ -202,7 +164,6 @@ class Vehicle:
         direction = targetPos - self.location
         desiredAngle = (-math.degrees(math.atan2(direction.y, direction.x))) % 360
         
-        #if (desiredAngle != self.driveAngle and desiredAngle != -self.driveAngle) or desiredAngle == 0:
         if desiredAngle != self.driveAngle:
             self.driveAngle = desiredAngle
             self.rotate_vehicle()
@@ -240,7 +201,7 @@ class Vehicle:
         surroundings['vehicle_ahead'] = None
         
         targetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex)
-        if self.targetPositionIndex <= 3 or targetPosition == self.location :
+        if self.targetPositionIndex <= 1 or targetPosition == self.location:
             return surroundings
         direction = (self.location - targetPosition).normalize()
 
@@ -260,16 +221,16 @@ class Vehicle:
                     return surroundings
                 else:
                     frontFov = self.create_fov_boundary(direction, -45, 45, 200)
-                    leftSideFov = self.create_fov_boundary(direction, -170, -45, 200)                    
-                    rightSideFov = self.create_fov_boundary(direction, 45, 170, 200)
+                    leftSideFov = self.create_fov_boundary(direction, -170, -20, 200)                    
+                    rightSideFov = self.create_fov_boundary(direction, 20, 170, 200)
                     if self.is_object_in_fov(other_vehicle.edges, frontFov[0], frontFov[1], 200):
                         surroundings['vehicles_front'].append(other_vehicle)
-                    elif self.is_object_in_fov(other_vehicle.edges, leftSideFov[0], leftSideFov[1], 200):
+                    if self.is_object_in_fov(other_vehicle.edges, leftSideFov[0], leftSideFov[1], 200):
                         surroundings['vehicles_left'].append(other_vehicle)
-                    elif self.is_object_in_fov(other_vehicle.edges, rightSideFov[0], rightSideFov[1], 200):
-                        surroundings['vehicles_right'].append(other_vehicle)                    
+                    if self.is_object_in_fov(other_vehicle.edges, rightSideFov[0], rightSideFov[1], 200):
+                        surroundings['vehicles_right'].append(other_vehicle)
                 
-        surroundings['vehicle_ahead'] = self.get_vehicle_ahead(surroundings['vehicles_front'], road)
+        surroundings['vehicle_ahead'] = self.get_vehicle_ahead(surroundings['vehicles_front'], road, self.desiredLaneIndex)
         return surroundings
     
 
@@ -290,7 +251,7 @@ class Vehicle:
         return False
 
 
-    def get_vehicle_ahead(self, allVehiclesInFront : list['Vehicle'], road : Road) -> 'Vehicle':
+    def get_vehicle_ahead(self, allVehiclesInFront : list['Vehicle'], road : Road, desiredLaneIndex : int) -> 'Vehicle':
         if len(allVehiclesInFront) == 0:
             return None
         else:
@@ -299,7 +260,7 @@ class Vehicle:
             first = True
             for vehicle in allVehiclesInFront:
                 if self.directionIndex == vehicle.directionIndex:
-                    if self.currentLaneIndex == vehicle.currentLaneIndex or self.currentLaneIndex == vehicle.desiredLaneIndex or self.desiredLaneIndex == vehicle.currentLaneIndex or self.desiredLaneIndex == vehicle.desiredLaneIndex:
+                    if self.currentLaneIndex == vehicle.currentLaneIndex or self.currentLaneIndex == vehicle.desiredLaneIndex or desiredLaneIndex == vehicle.currentLaneIndex or desiredLaneIndex == vehicle.desiredLaneIndex:
                          #distance = self.location.distance_to(vehicle.location)
                          distance = self.frontEdgeOfVehicle.distance_to(vehicle.backEdgeOfVehicle)
                          if first == True:
@@ -313,55 +274,6 @@ class Vehicle:
             return currentVehicleAhead                    
                                 
     
-    
-    # def upgradedAccelerateAndBreak(self, vehicleAhead : 'Vehicle', politeness : int):
-    #     """
-    #     Caculates and updates a vehicle's speed according to the road's conditions - other vehicles, hazards, etc.
-    #     """
-    #     minimal_distance = 10 + politeness * 10
-        
-    #     max_acceleration = 2  
-    #     max_deceleration = -5 
-
-    #     acceleration_factor = max_acceleration / self.weight
-    #     deceleration_factor = max_deceleration / self.weight
-
-    #     cruising_speed_factor = 0.5 #TODO: shouldn't be a literal but related to the next vehicle's speed
-    #     cruising_speed = self.desiredSpeed * cruising_speed_factor
-
-    #     clearSpaceAhead = (vehicleAhead is None)
-    #     if clearSpaceAhead:
-    #         acceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(acceleration_factor)
-    #         if self.speed + acceleration_speed <= self.desiredSpeed:
-    #             self.speed += acceleration_speed
-    #         else:
-    #             self.speed = self.desiredSpeed
-    #     else:
-    #         # distance = self.location.distance_to(vehicleAhead.location)
-    #         # if distance <= minimal_distance:
-    #         #     if self.speed > cruising_speed:
-    #         #         deceleration_speed = PixelsConverter.convert_speed_to_pixels_per_frames(deceleration_factor)
-    #         #         if self.speed + deceleration_speed > cruising_speed:
-    #         #             self.speed += deceleration_speed
-    #         #         else:
-    #         #             self.speed = cruising_speed
-    #         #     else:
-    #         #         self.speed = cruising_speed
-    #         v = self.speed
-    #         s = self.location.distance_to(vehicleAhead.location) - 20
-    #         delta_v = self.speed - vehicleAhead.speed
-    #         min_distance = 40
-    #         reaction_time = 1
-    #         comfortable_deceleration = 4
-    #         delta = 4
-    #         # Desired minimum gap
-    #         s_star = min_distance + v * reaction_time + (v * delta_v) / (2 * (max_acceleration * comfortable_deceleration)**0.5)
-
-    #         # Acceleration
-    #         acceleration = max_acceleration * (1 - (v / self.desiredSpeed)**delta - (s_star / s)**2)
-    #         self.speed += acceleration * 0.0167
-
-
     def accelerateAndBreak(self, vehicleAhead: 'Vehicle', politeness: int):
         """
         Calculates and updates a vehicle's speed according to the road's conditions - other vehicles, hazards, etc.
@@ -369,10 +281,7 @@ class Vehicle:
         minimal_distance = 10 + politeness * 3
         
         max_acceleration = 2  
-        # max_deceleration = -5 
-
         acceleration_factor = max_acceleration / self.weight
-        # deceleration_factor = max_deceleration / self.weight
 
         clearSpaceAhead = (vehicleAhead is None)
         if clearSpaceAhead:
@@ -383,7 +292,6 @@ class Vehicle:
                 self.speed = self.desiredSpeed
         else:
             v = self.speed
-            #d = self.location.distance_to(vehicleAhead.location) - (self.lengthOffset + vehicleAhead.lengthOffset)
             d = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
             delta_v = self.speed - vehicleAhead.speed
             reaction_time = 0.38
@@ -410,6 +318,7 @@ class Vehicle:
 
             # Ensure speed is not negative
             self.speed = max(self.speed, 0)
+
 
 
 
