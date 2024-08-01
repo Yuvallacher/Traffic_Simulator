@@ -36,22 +36,36 @@ class Vehicle:
         self.activelySwitchingLane = False
         self.finishedSwitchingLane = False
         self.driveAngle = driveAngle
-        self.frontEdgeOfVehicle = self.location + Vector2(1, 0).rotate(self.driveAngle) * self.lengthOffset
-        self.backEdgeOfVehicle = self.location + Vector2(1, 0).rotate(self.driveAngle + 180) * self.lengthOffset
-        self.rightEdgeOfVehicle = self.location + Vector2(1, 0).rotate(self.driveAngle + 90) * self.widthOffset
-        self.leftEdgeOfVehicle = self.location + Vector2(1, 0).rotate(self.driveAngle -90) * self.widthOffset
-        self.edges = [self.frontEdgeOfVehicle, self.backEdgeOfVehicle, self.rightEdgeOfVehicle, self.leftEdgeOfVehicle]
+        self.frontEdgeOfVehicle : Vector2
+        self.backEdgeOfVehicle : Vector2
+        self.rightEdgeOfVehicle : Vector2
+        self.leftEdgeOfVehicle : Vector2
+        self.edges : list[Vector2]
+        self.frontLeftCorner : Vector2
+        self.backLeftCorner : Vector2
+        self.frontRightcorner : Vector2
+        self.backRightCorner : Vector2
+        self.corners : list[Vector2]
         self.originalImage = image
         self.rotatedImage = self.originalImage
         self.rect = image.get_rect()
+        self.update_vehicle_edges_and_corners()
 
         
-    def update_vehicle_edges(self):
-        self.frontEdgeOfVehicle = self.location + Vector2(1, 0).rotate(self.driveAngle) * self.lengthOffset
-        self.backEdgeOfVehicle = self.location + Vector2(1, 0).rotate(self.driveAngle + 180) * self.lengthOffset
-        self.rightEdgeOfVehicle = self.location + Vector2(1, 0).rotate(self.driveAngle + 90) * self.widthOffset
-        self.leftEdgeOfVehicle = self.location + Vector2(1, 0).rotate(self.driveAngle -90) * self.widthOffset
+    def update_vehicle_edges_and_corners(self):
+        normalizedVector = Vector2(1, 0)
+        
+        self.frontEdgeOfVehicle = self.location + normalizedVector.rotate(self.driveAngle) * self.lengthOffset
+        self.backEdgeOfVehicle = self.location + normalizedVector.rotate(self.driveAngle + 180) * self.lengthOffset
+        self.rightEdgeOfVehicle = self.location + normalizedVector.rotate(self.driveAngle + 90) * self.widthOffset
+        self.leftEdgeOfVehicle = self.location + normalizedVector.rotate(self.driveAngle -90) * self.widthOffset
         self.edges = [self.frontEdgeOfVehicle, self.backEdgeOfVehicle, self.rightEdgeOfVehicle, self.leftEdgeOfVehicle]
+        
+        self.frontLeftCorner = self.location + normalizedVector.rotate(self.driveAngle) * self.lengthOffset + normalizedVector.rotate(self.driveAngle - 90) * self.widthOffset
+        self.backLeftCorner = self.location + normalizedVector.rotate(self.driveAngle + 180) * self.lengthOffset + normalizedVector.rotate(self.driveAngle - 90) * self.widthOffset
+        self.frontRightcorner = self.location + normalizedVector.rotate(self.driveAngle) * self.lengthOffset + normalizedVector.rotate(self.driveAngle + 90) * self.widthOffset
+        self.backRightCorner = self.location + normalizedVector.rotate(self.driveAngle + 180) * self.lengthOffset + normalizedVector.rotate(self.driveAngle + 90) * self.widthOffset
+        self.corners = [self.frontLeftCorner, self.frontRightcorner, self.backRightCorner, self.backLeftCorner]
 
         
     def drive(self, allVehicles : list['Vehicle'], world: World, dataManager : DataManager, road : Road):
@@ -115,7 +129,7 @@ class Vehicle:
             if distanceToTarget < 5:
                 targetPosition = road.get_target_position(self.directionIndex, self.desiredLaneIndex, self.targetPositionIndex)
                 self.location.update(targetPosition)
-                self.update_vehicle_edges()
+                self.update_vehicle_edges_and_corners()
                 self.currentLaneIndex = self.desiredLaneIndex
                 self.activelySwitchingLane = False
                 self.finishedSwitchingLane = True
@@ -137,7 +151,8 @@ class Vehicle:
 
     def check_for_space_in_target_lane(self, vehiclesOnSide : list['Vehicle'], vehicleAhead : 'Vehicle', road : Road, targetLaneIndex : int, isLeftDirection : bool):
         switchLane = False
-        closestVehicleToSide = self.get_vehicle_ahead(vehiclesOnSide, road, targetLaneIndex)
+        direction = 'left' if isLeftDirection else 'right'
+        closestVehicleToSide = self.get_closest_vehicle_in_direction(vehiclesOnSide, targetLaneIndex, direction)
         distanceToVehicleInFront = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
         
         if closestVehicleToSide is None:          
@@ -145,9 +160,9 @@ class Vehicle:
             switchLane = True
         else:
             if isLeftDirection:
-                distanceToClosestVehicleOnSide = self.location.distance_to(closestVehicleToSide.rightEdgeOfVehicle)
+                distanceToClosestVehicleOnSide = self.rightEdgeOfVehicle.distance_to(closestVehicleToSide.rightEdgeOfVehicle)
             else:
-                distanceToClosestVehicleOnSide = self.location.distance_to(closestVehicleToSide.leftEdgeOfVehicle)
+                distanceToClosestVehicleOnSide = self.leftEdgeOfVehicle.distance_to(closestVehicleToSide.leftEdgeOfVehicle)
             if distanceToClosestVehicleOnSide > 80:
                 # if distanceToVehicleInFront > 80:
                 switchLane = True
@@ -177,7 +192,7 @@ class Vehicle:
             self.targetPositionIndex += 1
 
         self.rect.center = self.location
-        self.update_vehicle_edges()
+        self.update_vehicle_edges_and_corners()
             
             
     def rotate_vehicle(self):
@@ -210,27 +225,29 @@ class Vehicle:
         for other_vehicle in allVehicles:
             if self != other_vehicle:
                 if self.rect.colliderect(other_vehicle.rect):
-                    if not (self.inAccident and other_vehicle.inAccident):
-                        dataManager.log_accident(type(self).__name__, type(other_vehicle).__name__, PixelsConverter.convert_pixels_per_frames_to_speed(self.speed), PixelsConverter.convert_pixels_per_frames_to_speed(other_vehicle.speed))
-                    self.inAccident = True
-                    self.speed = 0
-                    self.desiredSpeed = 0
-                    other_vehicle.inAccident = True
-                    other_vehicle.speed = 0
-                    other_vehicle.desiredSpeed = 0
-                    return surroundings
-                else:
-                    frontFov = self.create_fov_boundary(direction, -45, 45, 200)
-                    leftSideFov = self.create_fov_boundary(direction, -170, -20, 200)                    
-                    rightSideFov = self.create_fov_boundary(direction, 20, 170, 200)
-                    if self.is_object_in_fov(other_vehicle.edges, frontFov[0], frontFov[1], 200):
-                        surroundings['vehicles_front'].append(other_vehicle)
-                    if self.is_object_in_fov(other_vehicle.edges, leftSideFov[0], leftSideFov[1], 200):
-                        surroundings['vehicles_left'].append(other_vehicle)
-                    if self.is_object_in_fov(other_vehicle.edges, rightSideFov[0], rightSideFov[1], 200):
-                        surroundings['vehicles_right'].append(other_vehicle)
+                    for corner in other_vehicle.corners:
+                        if QuadCalculation.point_in_quad(corner, self.corners):
+                            if not (self.inAccident and other_vehicle.inAccident):
+                                dataManager.log_accident(type(self).__name__, type(other_vehicle).__name__, PixelsConverter.convert_pixels_per_frames_to_speed(self.speed), PixelsConverter.convert_pixels_per_frames_to_speed(other_vehicle.speed))
+                            self.inAccident = True
+                            self.speed = 0
+                            self.desiredSpeed = 0
+                            other_vehicle.inAccident = True
+                            other_vehicle.speed = 0
+                            other_vehicle.desiredSpeed = 0
+                            return surroundings
+            
+                frontFov = self.create_fov_boundary(direction, -45, 45, 200)
+                leftSideFov = self.create_fov_boundary(direction, -170, -20, 200)                    
+                rightSideFov = self.create_fov_boundary(direction, 20, 170, 200)
+                if self.is_object_in_fov(other_vehicle.corners, frontFov[0], frontFov[1], 200):
+                    surroundings['vehicles_front'].append(other_vehicle)
+                if self.is_object_in_fov(other_vehicle.corners, leftSideFov[0], leftSideFov[1], 200):
+                    surroundings['vehicles_left'].append(other_vehicle)
+                if self.is_object_in_fov(other_vehicle.corners, rightSideFov[0], rightSideFov[1], 200):
+                    surroundings['vehicles_right'].append(other_vehicle)
                 
-        surroundings['vehicle_ahead'] = self.get_vehicle_ahead(surroundings['vehicles_front'], road, self.desiredLaneIndex)
+        surroundings['vehicle_ahead'] = self.get_closest_vehicle_in_direction(surroundings['vehicles_front'], self.desiredLaneIndex, 'front')
         return surroundings
     
 
@@ -251,28 +268,37 @@ class Vehicle:
         return False
 
 
-    def get_vehicle_ahead(self, allVehiclesInFront : list['Vehicle'], road : Road, desiredLaneIndex : int) -> 'Vehicle':
-        if len(allVehiclesInFront) == 0:
+    def get_closest_vehicle_in_direction(self, allVehiclesInDirection : list['Vehicle'], targetLaneIndex : int ,direction : str) -> 'Vehicle':
+        if len(allVehiclesInDirection) == 0:
             return None
         else:
-            currentVehicleAhead = None
+            currentVehicleInDirection = None
             minDistance = 0
             first = True
-            for vehicle in allVehiclesInFront:
+            for vehicle in allVehiclesInDirection:
+                if direction == 'front':
+                    edge = self.frontEdgeOfVehicle
+                    otherVehicleEdge = vehicle.backEdgeOfVehicle
+                elif direction == 'left':
+                    edge = self.leftEdgeOfVehicle
+                    otherVehicleEdge = vehicle.rightEdgeOfVehicle
+                else: # direction == 'right'
+                    edge = self.rightEdgeOfVehicle
+                    otherVehicleEdge = vehicle.leftEdgeOfVehicle
+                    
                 if self.directionIndex == vehicle.directionIndex:
-                    if self.currentLaneIndex == vehicle.currentLaneIndex or self.currentLaneIndex == vehicle.desiredLaneIndex or desiredLaneIndex == vehicle.currentLaneIndex or desiredLaneIndex == vehicle.desiredLaneIndex:
-                         #distance = self.location.distance_to(vehicle.location)
-                         distance = self.frontEdgeOfVehicle.distance_to(vehicle.backEdgeOfVehicle)
+                    if self.currentLaneIndex == vehicle.currentLaneIndex or self.currentLaneIndex == vehicle.desiredLaneIndex or targetLaneIndex == vehicle.currentLaneIndex or targetLaneIndex == vehicle.desiredLaneIndex:
+                         distance = edge.distance_to(otherVehicleEdge)
                          if first == True:
                             minDistance = distance
-                            currentVehicleAhead = vehicle
+                            currentVehicleInDirection = vehicle
                             first = False
                          else:
                              if distance < minDistance:
                                 minDistance = distance
-                                currentVehicleAhead = vehicle
-            return currentVehicleAhead                    
-                                
+                                currentVehicleInDirection = vehicle
+            return currentVehicleInDirection
+
     
     def accelerateAndBreak(self, vehicleAhead: 'Vehicle', politeness: int):
         """
