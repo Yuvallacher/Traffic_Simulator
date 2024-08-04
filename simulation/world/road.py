@@ -41,6 +41,9 @@ class Road:
             return None
         else:
             return laneIndex + 1
+        
+    def get_rightmost_lane_index(self, directionIndex : int) -> int:
+        return len(self.allLanesInRoad[directionIndex]) - 1
 
     class Lane:
         def __init__(self, listOfCoordinates : list[Vector2]):
