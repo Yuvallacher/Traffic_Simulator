@@ -18,8 +18,7 @@ create new road types - curve, plus-junction, T-junction (maybe juncion class an
 
 CREATE, FIX AND IMPROVE VEHICLE'S AI MODEL!!!!!!11!1111!!1!!1 
     fix deceleration distance / timing
-    add lane switch
-        prevent vehicles from switching lanes close to the end of the path
+    add case of selection between two possible lanes
     add politeness coefficient to truck and car, truck is more polite
     add awareness to world
         add awareness coefficient to truck and car, truck is more aware
@@ -33,3 +32,10 @@ add documentation to difficult to understand function (in the """ comment """ wa
 change all the drawRoad, drawCar functions in main.py (possibly delete them and write new functions)
 
 add user interface with scrollers, buttons and stuff like that to allow users to controll the environment variables
+
+accident detection and handling
+    self.shouldSwitchLane = True
+    decelerate - emergency break or normal deceleration, based on distance
+    emergency lane switching - lower the distance threshold to allow for more "close" switches
+
+if we have time - add pedestrians to crosswalks
