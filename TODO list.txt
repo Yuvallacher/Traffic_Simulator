@@ -35,7 +35,6 @@ add user interface with scrollers, buttons and stuff like that to allow users to
 
 accident detection and handling
     self.shouldSwitchLane = True
-    decelerate - emergency break or normal deceleration, based on distance
     emergency lane switching - lower the distance threshold to allow for more "close" switches
 
 if we have time - add pedestrians to crosswalks
