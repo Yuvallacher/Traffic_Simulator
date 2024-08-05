@@ -49,7 +49,9 @@ class VehiclesManager:
                             else:
                                 image = VehicleDrawer.get_truck_image()
                                 newVehicle = Truck(vehicleCoordinates, directionIndex, laneIndex, driveAngle, image, speed=simulationWorld.MAX_SPEED)
-                            newVehicle.setDesiredSpeed(simulationWorld.MAX_SPEED)
+                            newVehicle.set_desired_speed(simulationWorld.MAX_SPEED)
+                            newVehicle.set_politeness(simulationWorld.POLITENESS)
+                            newVehicle.set_awareness(simulationWorld.AWARENESS)
                             self.vehicles.append(newVehicle)
                         
                         
