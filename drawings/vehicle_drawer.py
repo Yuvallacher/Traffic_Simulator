@@ -24,20 +24,13 @@ class VehicleDrawer:
     def get_truck_image() -> Surface:
         return VehicleDrawer.red_truck_image
 
-    # staticmethod
-    # def draw_vehicles(self, vehicles: list[Vehicle], screen):
-    #     for vehicle in vehicles:
-    #         if isinstance(vehicle, Car):
-    #             screen.blit(self.carPictures[vehicle.colorIndex], (vehicle.location.x, vehicle.location.y - 7))
-    #         else:
-    #             screen.blit(self.red_truck_image, (vehicle.location.x, vehicle.location.y - 8))
 
 
     @staticmethod
     def draw_vehicles(vehicles : list[Vehicle], screen):
         for vehicle in vehicles:
             screen.blit(vehicle.rotatedImage, vehicle.rect.topleft)
-      
+                
             # pygame.draw.rect(screen, (0, 255, 0), vehicle.rect, 2)
             # VehicleDrawer.draw_hitbox(screen, vehicle)
 

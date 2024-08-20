@@ -19,7 +19,7 @@ class VehiclesManager:
         self.maxNumOfCars = max_number_of_cars
 
 
-    def add_vehicles(self, simulationWorld: World):
+    def add_vehicles(self, simulationWorld: World, screen):
         """
         adds at most one new vehicle for each lane
         """
@@ -34,7 +34,7 @@ class VehiclesManager:
                             for vehicle in self.vehicles:
                                 # if vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.laneIndex == direction.index(lane) and vehicle.location.distance_to(lane.startingPoint) <= 100:
                                 if vehicle.roadIndex == roadIndex and vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.currentLaneIndex == direction.index(lane):
-                                    if vehicle.targetPositionIndex <= 4:
+                                    if vehicle.targetPositionIndex <= 6:
                                         # TODO fix distance checking! currently checks in an "air distance" so not entirely accurate
                                         space_available = False
                                         break
@@ -48,10 +48,10 @@ class VehiclesManager:
                                 car_probability = random.uniform(0, 1)
                                 if car_probability >= TRUCK_PROBABILITY:
                                     image = VehicleDrawer.get_car_image()
-                                    newVehicle = Car(vehicleCoordinates, roadIndex, directionIndex, laneIndex, driveAngle, image, speed=simulationWorld.MAX_SPEED)
+                                    newVehicle = Car(screen, vehicleCoordinates, roadIndex, directionIndex, laneIndex, driveAngle, image, speed=simulationWorld.MAX_SPEED)
                                 else:
                                     image = VehicleDrawer.get_truck_image()
-                                    newVehicle = Truck(vehicleCoordinates, roadIndex, directionIndex, laneIndex, driveAngle, image, speed=simulationWorld.MAX_SPEED)
+                                    newVehicle = Truck(screen, vehicleCoordinates, roadIndex, directionIndex, laneIndex, driveAngle, image, speed=simulationWorld.MAX_SPEED)
                                 newVehicle.set_desired_speed(simulationWorld.MAX_SPEED)
                                 newVehicle.set_politeness(simulationWorld.POLITENESS)
                                 newVehicle.set_awareness(simulationWorld.AWARENESS)

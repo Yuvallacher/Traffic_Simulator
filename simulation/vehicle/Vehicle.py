@@ -11,6 +11,7 @@ from pygame.rect import Rect
 from pygame import mask #TRY 
 import random
 import math
+from pygame.draw import line
 
 CAR_AVG_SPEED = 0.9
 CAR_SPEED_STANDARD_DEVIATION = 0.12
@@ -22,7 +23,7 @@ AWARENESS_AVG = 1
 AWARENESS_STANDART_DEVIATION = 0.1
 
 class Vehicle:
-    def __init__(self, location : Vector2, speedCoefficient : float, roadIndex : int, directionIndex : int, currentLaneIndex : int, driveAngle : float, image : Surface, weight : float, width : int, length : int, speed=60):
+    def __init__(self, screen, location : Vector2, speedCoefficient : float, roadIndex : int, directionIndex : int, currentLaneIndex : int, driveAngle : float, image : Surface, weight : float, width : int, length : int, speed=60):
         self.location = location
         self.speed = PixelsConverter.convert_speed_to_pixels_per_frames(speed)
         self.desiredSpeed = 0.0
@@ -61,21 +62,25 @@ class Vehicle:
         self.rect = image.get_rect()
         self.mask = mask.from_surface(self.originalImage) 
         self.update_vehicle_edges_and_corners()
+        self.screen = screen
 
         
     def update_vehicle_edges_and_corners(self):
         normalizedVector = Vector2(1, 0)
-        
-        self.frontEdgeOfVehicle = self.location + normalizedVector.rotate(self.driveAngle) * self.lengthOffset
-        self.backEdgeOfVehicle = self.location + normalizedVector.rotate(self.driveAngle + 180) * self.lengthOffset
-        self.rightEdgeOfVehicle = self.location + normalizedVector.rotate(self.driveAngle + 90) * self.widthOffset
-        self.leftEdgeOfVehicle = self.location + normalizedVector.rotate(self.driveAngle -90) * self.widthOffset
+        coefficient = 1
+        if self.driveAngle == 90 or self.driveAngle == 270:
+            coefficient *= -1
+                        
+        self.frontEdgeOfVehicle = (self.location + coefficient * (normalizedVector.rotate(self.driveAngle) * self.lengthOffset))
+        self.backEdgeOfVehicle = self.location + coefficient * (normalizedVector.rotate(self.driveAngle + 180) * self.lengthOffset)
+        self.rightEdgeOfVehicle = self.location + coefficient * ( normalizedVector.rotate(self.driveAngle + 90) * self.widthOffset)
+        self.leftEdgeOfVehicle = self.location + coefficient * (normalizedVector.rotate(self.driveAngle - 90) * self.widthOffset)
         self.edges = [self.frontEdgeOfVehicle, self.backEdgeOfVehicle, self.rightEdgeOfVehicle, self.leftEdgeOfVehicle]
         
-        self.frontLeftCorner = self.location + normalizedVector.rotate(self.driveAngle) * self.lengthOffset + normalizedVector.rotate(self.driveAngle - 90) * self.widthOffset
-        self.backLeftCorner = self.location + normalizedVector.rotate(self.driveAngle + 180) * self.lengthOffset + normalizedVector.rotate(self.driveAngle - 90) * self.widthOffset
-        self.frontRightcorner = self.location + normalizedVector.rotate(self.driveAngle) * self.lengthOffset + normalizedVector.rotate(self.driveAngle + 90) * self.widthOffset
-        self.backRightCorner = self.location + normalizedVector.rotate(self.driveAngle + 180) * self.lengthOffset + normalizedVector.rotate(self.driveAngle + 90) * self.widthOffset
+        self.frontLeftCorner = self.location + coefficient * (normalizedVector.rotate(self.driveAngle) * self.lengthOffset + normalizedVector.rotate(self.driveAngle - 90) * self.widthOffset)
+        self.backLeftCorner = self.location + coefficient * (normalizedVector.rotate(self.driveAngle + 180) * self.lengthOffset + normalizedVector.rotate(self.driveAngle - 90) * self.widthOffset)
+        self.frontRightcorner = self.location + coefficient * (normalizedVector.rotate(self.driveAngle) * self.lengthOffset + normalizedVector.rotate(self.driveAngle + 90) * self.widthOffset)
+        self.backRightCorner = self.location + coefficient * (normalizedVector.rotate(self.driveAngle + 180) * self.lengthOffset + normalizedVector.rotate(self.driveAngle + 90) * self.widthOffset)
         self.corners = [self.frontLeftCorner, self.frontRightcorner, self.backRightCorner, self.backLeftCorner]
 
         
@@ -257,6 +262,13 @@ class Vehicle:
             self.awareness = 1
         
     
+    def recieve_fov_lines(self, road : Road, angle1 : int, angle2 : int):
+        targetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex)
+        if not (self.targetPositionIndex <= 1 or targetPosition == self.location):
+            direction = (self.location - targetPosition).normalize()
+            return self.create_fov_boundary(direction, angle1, angle2, 200)
+    
+    
     def get_all_harazds_around_vehicle(self, allVehicles : list['Vehicle'], road : Road, dataManager : DataManager) -> dict:
         """
         The vehicle scans its sorroundings for hazards, oncoming traffic, and other variables that can influence the driver's decision
@@ -272,14 +284,14 @@ class Vehicle:
             return surroundings
         direction = (self.location - targetPosition).normalize()
 
+        frontFov = self.create_fov_boundary(direction, -45, 45, 200)
+        leftSideFov = self.create_fov_boundary(direction, -170, -20, 200)                    
+        rightSideFov = self.create_fov_boundary(direction, 20, 170, 200)
         #TODO: more checks for surroundings like hazards, turns, etc.
         
         for other_vehicle in allVehicles:
             if self != other_vehicle:
                 if self.check_collision(other_vehicle):    
-                # if self.rect.colliderect(other_vehicle.rect):
-                    # for corner in other_vehicle.corners:
-                    #     if QuadCalculation.point_in_quad(corner, self.corners):
                     if not (self.inAccident and other_vehicle.inAccident):
                         dataManager.log_accident(type(self).__name__, type(other_vehicle).__name__, PixelsConverter.convert_pixels_per_frames_to_speed(self.speed), PixelsConverter.convert_pixels_per_frames_to_speed(other_vehicle.speed))
                     self.inAccident = True
@@ -290,15 +302,22 @@ class Vehicle:
                     other_vehicle.desiredSpeed = 0
                     return surroundings
             
-                frontFov = self.create_fov_boundary(direction, -45, 45, 200)
-                leftSideFov = self.create_fov_boundary(direction, -170, -20, 200)                    
-                rightSideFov = self.create_fov_boundary(direction, 20, 170, 200)
                 if self.is_object_in_fov(other_vehicle.corners, frontFov[0], frontFov[1], 200):
                     surroundings['vehicles_front'].append(other_vehicle)
                 if self.is_object_in_fov(other_vehicle.corners, leftSideFov[0], leftSideFov[1], 200):
                     surroundings['vehicles_left'].append(other_vehicle)
                 if self.is_object_in_fov(other_vehicle.corners, rightSideFov[0], rightSideFov[1], 200):
                     surroundings['vehicles_right'].append(other_vehicle)
+                
+        # drawings of fovs - DELETE LATER
+        # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + frontFov[0]), 1)
+        # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + frontFov[1]), 1)
+        
+        # line(self.screen, (0, 0, 255), self.rightEdgeOfVehicle, (self.rightEdgeOfVehicle + rightSideFov[0]), 1)
+        # line(self.screen, (0, 0, 255), self.rightEdgeOfVehicle, (self.rightEdgeOfVehicle + rightSideFov[1]), 1)
+        
+        # line(self.screen, (0, 255, 0), self.leftEdgeOfVehicle, (self.leftEdgeOfVehicle + leftSideFov[0]), 1)
+        # line(self.screen, (0, 255, 0), self.leftEdgeOfVehicle, (self.leftEdgeOfVehicle + leftSideFov[1]), 1)
                 
         surroundings['vehicle_ahead'] = self.get_closest_vehicle(surroundings['vehicles_front'], self.desiredLaneIndex, 'front', checkAllLanes=True)
         return surroundings
@@ -416,11 +435,11 @@ class Vehicle:
 
 #---------------------Car---------------------#
 class Car(Vehicle):
-    def __init__(self, location : Vector2, roadIndex : int, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface, speed=60):
+    def __init__(self, screen, location : Vector2, roadIndex : int, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface, speed=60):
         self.colorIndex = random.randint(0, 4)
         averageSpeedForLane = CAR_AVG_SPEED - laneIndex * PixelsConverter.convert_speed_to_pixels_per_frames(5)
         speedCoefficient = normal(averageSpeedForLane, CAR_SPEED_STANDARD_DEVIATION)
-        super().__init__(location, speedCoefficient, roadIndex, directionIndex, laneIndex, driveAngle, image, weight=2, width=20, length=30, speed=speed)
+        super().__init__(screen, location, speedCoefficient, roadIndex, directionIndex, laneIndex, driveAngle, image, weight=2, width=20, length=30, speed=speed)
     
     
     
@@ -429,8 +448,8 @@ class Car(Vehicle):
     
 #--------------------Truck--------------------#
 class Truck(Vehicle):
-    def __init__(self, location : Vector2, roadIndex : int, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface, speed=60):
+    def __init__(self, screen, location : Vector2, roadIndex : int, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface, speed=60):
         weight = normal(20, 3)
         averageSpeedForLane = TRUCK_AVG_SPEED - laneIndex * PixelsConverter.convert_speed_to_pixels_per_frames(5)
         speedCoefficient = normal(averageSpeedForLane, TRUCK_SPEED_STANDARD_DEVIATION)
-        super().__init__(location, speedCoefficient, roadIndex, directionIndex, laneIndex, driveAngle, image, weight=weight, width=20, length=60, speed=speed)
+        super().__init__(screen, location, speedCoefficient, roadIndex, directionIndex, laneIndex, driveAngle, image, weight=weight, width=20, length=60, speed=speed)

@@ -17,9 +17,9 @@ PROJECTS:
 
 4. add hazards - traffric lights, signs, horse on road (road works), etc.
 
-5. add curve mishandling - possibility of entering opposite lane if entering a curve at high speeds
+5. add user interface with scrollers, buttons and stuff like that to allow users to controll the environment variables
 
-6. add user interface with scrollers, buttons and stuff like that to allow users to controll the environment variables
+6. add curve mishandling - possibility of entering opposite lane if entering a curve at high speeds
 
 
 
