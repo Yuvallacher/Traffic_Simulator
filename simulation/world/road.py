@@ -46,18 +46,18 @@ class Road:
 
 class RoadBuilder:
     @staticmethod
-    def create_road(roadName : str, startingNumberOfLanes=2) -> Road:
+    def create_road(roadName : str, startingNumberOfLanes=2) -> list[Road]:
         if 'straight' in roadName:
-            lanes = RoadBuilder.straight_road_read_lanes_from_file(startingNumberOfLanes)
+            roads = RoadBuilder.straight_road_read_lanes_from_file(startingNumberOfLanes)
         elif 'junction' in roadName:
-            lanes = RoadBuilder.junction_road_read_lanes_from_file(startingNumberOfLanes, roadName)
+            roads = RoadBuilder.junction_road_read_lanes_from_file(startingNumberOfLanes, roadName)
         
-        images, imagesPos = RoadBuilder.load_lane_images(roadName)
-        return Road(startingNumberOfLanes, lanes, images, imagesPos)
-        
+        # images, imagesPos = RoadBuilder.load_lane_images(roadName)
+        # return Road(startingNumberOfLanes, lanes, images, imagesPos)
+        return roads
         
     @staticmethod
-    def straight_road_read_lanes_from_file(startingNumberOfLanes : int) -> list[list[Road.Lane]]: # TODO implement and move to inheriting classes
+    def straight_road_read_lanes_from_file(startingNumberOfLanes : int) -> list[Road]: # TODO implement and move to inheriting classes
         with open("jsons\\road.json", 'r') as file:
             data = json.load(file)
 
@@ -66,8 +66,7 @@ class RoadBuilder:
 
             lanes_direction_1 = []
             lanes_direction_2 = []
-            
-           
+            roadsList = []
             
             for idx, lane_coordinates in enumerate(lanes_data):
                 if idx < 2 * startingNumberOfLanes:
@@ -78,30 +77,39 @@ class RoadBuilder:
                         lanes_direction_1.append(lane) # (left-to-right driving direction)
                     else:
                         lanes_direction_2.append(lane) # (right-to-left driving direction)
-
-            return [lanes_direction_1, lanes_direction_2]
+            images, imagesPos = RoadBuilder.load_lane_images(road_data)
+            roadDirections = [lanes_direction_1, lanes_direction_2]
+            road = Road(startingNumberOfLanes, roadDirections, images, imagesPos)
+            roadsList.append(road)
+            return roadsList
     
     
-    @staticmethod
-    def load_lane_images(roadName : str) -> list[list]: # TODO implement and move to inheriting classes
-        with open("jsons\\road.json", 'r') as file:
-            data = json.load(file)
-            if "straight" in roadName:
-                roadData = data["straight_road"]
-            elif "junction_road" in roadName:
-                roadData = data["junction_road"]
+    # @staticmethod
+    # def load_lane_images(roadName : str) -> list[list]: # TODO implement and move to inheriting classes
+    #     with open("jsons\\road.json", 'r') as file:
+    #         data = json.load(file)
+    #         if "straight" in roadName:
+    #             roadData = data["straight_road"]
+    #         elif "junction_road" in roadName:
+    #             roadData = data["junction_road"]
             
-            imagesPaths = roadData["images_path"]
-            imagesScales = roadData["images_scales"]
-            imagesPos = roadData["image_pos"]
-            images = []
-            for index, imagePath in enumerate(imagesPaths):
-                images.append(pygame.transform.scale(pygame.image.load(imagePath), imagesScales[index])) #TODO add scale? if so, what scale            
-            return [images, imagesPos]
+    #         imagesPaths = roadData["images_path"]
+    #         imagesScales = roadData["images_scales"]
+    #         imagesPos = roadData["image_pos"]
+    #         images = []
+    #         for index, imagePath in enumerate(imagesPaths):
+    #             images.append(pygame.transform.scale(pygame.image.load(imagePath), imagesScales[index])) #TODO add scale? if so, what scale            
+    #         return [images, imagesPos]
 
-           
-
-
+    @staticmethod
+    def load_lane_images(roadData : dict) -> list[list]: # TODO implement and move to inheriting classes
+        imagesPaths = roadData["images_path"]
+        imagesScales = roadData["images_scales"]
+        imagesPos = roadData["image_pos"]
+        images = []
+        for index, imagePath in enumerate(imagesPaths):
+            images.append(pygame.transform.scale(pygame.image.load(imagePath), imagesScales[index])) #TODO add scale? if so, what scale            
+        return [images, imagesPos]       
 
 
     @staticmethod
@@ -115,6 +123,7 @@ class RoadBuilder:
 
             lanes_direction_1 = []
             lanes_direction_2 = []
+            imagesPaths = road_data["images_path"]
             imagesScales = road_data["images_scales"]
             imagesPos = road_data["image_pos"]
             
