@@ -13,20 +13,11 @@ class Road:
         self.imagesPositions = imagesPositions
                
         
-    def add_lane(self):
-        if self.currNumOfLanes < self.maxNumOfLanes:
-            self.currNumOfLanes += 1
-
-
-    def remove_lane(self):
-        if self.currNumOfLanes != 1:
-            self.currNumOfLanes -= 1
-            # TODO remove all vehicles on deleted lane
         
     def get_target_position(self, directionIndex : int, laneIndex : int, currentTargetPositionIndex : int) -> Vector2:
         path = self.allLanesInRoad[directionIndex][laneIndex].path
         if currentTargetPositionIndex + 1 < len(path):
-            return path[currentTargetPositionIndex] #TODO maybe change +1 to take speed into consideration
+            return path[currentTargetPositionIndex] 
         else:
             return path[-1]
         
@@ -58,8 +49,8 @@ class RoadBuilder:
     def create_road(roadName : str, startingNumberOfLanes=2) -> Road:
         if 'straight' in roadName:
             lanes = RoadBuilder.straight_road_read_lanes_from_file(startingNumberOfLanes)
-        elif 'curved' in roadName:
-            lanes # TODO implement new functions
+        elif 'junction' in roadName:
+            lanes = RoadBuilder.junction_road_read_lanes_from_file(startingNumberOfLanes, roadName)
         
         images, imagesPos = RoadBuilder.load_lane_images(roadName)
         return Road(startingNumberOfLanes, lanes, images, imagesPos)
@@ -76,7 +67,7 @@ class RoadBuilder:
             lanes_direction_1 = []
             lanes_direction_2 = []
             
-            #TODO add a way to limit user - only 1 or 2 lanes in each direction
+           
             
             for idx, lane_coordinates in enumerate(lanes_data):
                 if idx < 2 * startingNumberOfLanes:
@@ -97,8 +88,8 @@ class RoadBuilder:
             data = json.load(file)
             if "straight" in roadName:
                 roadData = data["straight_road"]
-            elif "curved" in roadName:
-                roadData #TODO implement
+            elif "junction_road" in roadName:
+                roadData = data["junction_road"]
             
             imagesPaths = roadData["images_path"]
             imagesScales = roadData["images_scales"]
@@ -108,42 +99,44 @@ class RoadBuilder:
                 images.append(pygame.transform.scale(pygame.image.load(imagePath), imagesScales[index])) #TODO add scale? if so, what scale            
             return [images, imagesPos]
 
-            # pygame.transform.scale(pygame.image.load('carPictures\\redCar.png'), (25, 15))
+           
 
 
 
 
-# class Road:
-#     def __init__(self, starting_position : Point, ending_position : Point, number_of_lanes : int, lane_width):
-#         self.starting_position = starting_position
-#         self.ending_position = ending_position
-#         self.numer_of_lanes = number_of_lanes
-#         self.lanes = []
-#         for i in range(number_of_lanes):
-#             lane_y = self.starting_position.y + 10 + (20 * i)
-#             self.lanes.append(Road.Lane(lane_width, Point(0, lane_y), Point(self.ending_position.x, lane_y)))
-        
-#     def addLane(self):
-#         lane_y = self.starting_position.y + 10 + (20 * self.numer_of_lanes)
-#         self.lanes.append(Road.Lane(20, Point(0, lane_y), Point(self.ending_position, lane_y)))
-#         self.numer_of_lanes += 1
-        
-#     def removeLane(self):
-#         self.lanes.remove(self.lanes[self.numer_of_lanes - 1])
-#         self.numer_of_lanes -= 1
-#         #TODO: delete cars on the removed lane
-    
-#     # get index of lane based on specific point
-#     def getLane(self, coordinates : Vector2):
-#         lane_y = coordinates.y
-#         for lane in self.lanes:
-#             if lane_y == lane.y:
-#                 return self.lanes.index(lane)
-#         return -1
-    
-#     class Lane:
-#         def __init__(self, lane_width, starting_position : Point, ending_position : Point):
-#             self.lane_width = lane_width
-#             self.starting_position = starting_position
-#             self.ending_position = ending_position
-#             self.y = starting_position.y
+    @staticmethod
+    def junction_road_read_lanes_from_file(startingNumberOfLanes : int, roadName : str) -> list[Road]: # TODO implement and move to inheriting classes
+        with open("jsons\\road.json", 'r') as file:
+            
+            data = json.load(file)
+            roadsList = []
+            road_data = data['junction_road']
+            lanes_data = road_data['lanes']
+
+            lanes_direction_1 = []
+            lanes_direction_2 = []
+            imagesScales = road_data["images_scales"]
+            imagesPos = road_data["image_pos"]
+            
+
+            #TODO add a way to limit user - only 1 or 2 lanes in each direction           
+            for idx, lane_coordinates in enumerate(lanes_data):
+                path = [Vector2(coord) for coord in lane_coordinates]
+                lane = Road.Lane(path)
+
+                if idx % 2 == 0:
+                    lanes_direction_1.append(lane) # (left-to-right driving direction)
+                else:
+                    lanes_direction_2.append(lane) # (right-to-left driving direction)
+                    roadDirections = [lanes_direction_1, lanes_direction_2]
+                    road = Road(startingNumberOfLanes, roadDirections, imagesScales, imagesPos)
+                    roadsList.append(road)
+                    lanes_direction_1 = []
+                    lanes_direction_2 = []
+                    
+
+            return roadsList  
+
+
+
+

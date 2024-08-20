@@ -7,16 +7,23 @@ from simulation.manager.vehicles_manager import VehiclesManager
 from drawings.vehicle_drawer import VehicleDrawer
 from simulation.data.DataManager import DataManager
 
-#roads 
+ 
 road = RoadBuilder.create_road("straight", 2)
-
+roadsList = []
+roadsList.append(road)
+# roads = RoadBuilder.junction_road_read_lanes_from_file(1,"junction_road")
 #world creation
-simulationWorld = World(road)
+simulationWorld = World(roadsList)
 simulationRunning = True
 
-def updateCarPos(vehicles: list[Vehicle], simulationWorld : World, dataManager : DataManager, road : Road): #TODO probably move to a different place
+# def updateCarPos(vehicles: list[Vehicle], simulationWorld : World, dataManager : DataManager, road : Road): #TODO probably move to a different place
+#     for vehicle in vehicles:
+#         vehicle.drive(vehicles, simulationWorld, dataManager, road)
+
+def updateCarPos(vehicles: list[Vehicle], simulationWorld : World, dataManager : DataManager): #TODO probably move to a different place
     for vehicle in vehicles:
-        vehicle.drive(vehicles, simulationWorld, dataManager, road)
+        vehicleRoad = simulationWorld.get_vehicle_road(vehicle.roadIndex)
+        vehicle.drive(vehicles, simulationWorld, dataManager, vehicleRoad)
 
 screen = pygame.display.set_mode((simulationWorld.SCREEN_WIDTH, simulationWorld.SCREEN_HEIGHT))
 vehiclesManager = VehiclesManager(simulationWorld.NUMBER_OF_CARS)
@@ -32,11 +39,13 @@ next_stat_update = pygame.time.get_ticks() + dataManager.export_interval * 1000 
 while simulationRunning:
     screen.fill(simulationWorld.WHITE)
     screen.blit(road.laneImages[road.currNumOfLanes * 2 - 1], road.imagesPositions[road.currNumOfLanes * 2 - 1]) #TODO renove this late, this is for testing only
-    
-    vehiclesManager.add_vehicles(road.allLanesInRoad, simulationWorld)
-    updateCarPos(vehiclesManager.vehicles, simulationWorld, dataManager, road)
+    #screen.blit(pygame.image.load("roadPictures\\junctionRoad.png"),[0, 10])
+    # vehiclesManager.add_vehicles(road.allLanesInRoad, simulationWorld)
+    vehiclesManager.add_vehicles(simulationWorld)
+    updateCarPos(vehiclesManager.vehicles, simulationWorld, dataManager)
     VehicleDrawer.draw_vehicles(vehiclesManager.vehicles, screen)
-    vehiclesManager.remove_vehicles(road.allLanesInRoad)
+    # vehiclesManager.remove_vehicles(road.allLanesInRoad)
+    vehiclesManager.remove_vehicles(roadsList)
 
     current_time = pygame.time.get_ticks()
     if current_time >= next_stat_update:

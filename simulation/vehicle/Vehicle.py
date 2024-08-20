@@ -8,6 +8,7 @@ from pygame.math import Vector2
 from pygame import transform
 from pygame import Surface
 from pygame.rect import Rect
+from pygame import mask #TRY 
 import random
 import math
 
@@ -21,7 +22,7 @@ AWARENESS_AVG = 1
 AWARENESS_STANDART_DEVIATION = 0.1
 
 class Vehicle:
-    def __init__(self, location : Vector2, speedCoefficient : float, directionIndex : int, currentLaneIndex : int, driveAngle : float, image : Surface, weight : float, width : int, length : int, speed=60):
+    def __init__(self, location : Vector2, speedCoefficient : float, roadIndex : int, directionIndex : int, currentLaneIndex : int, driveAngle : float, image : Surface, weight : float, width : int, length : int, speed=60):
         self.location = location
         self.speed = PixelsConverter.convert_speed_to_pixels_per_frames(speed)
         self.desiredSpeed = 0.0
@@ -35,6 +36,7 @@ class Vehicle:
         self.widthOffset = self.width / 2
         self.lengthOffset = self.length / 2
         self.speedCoefficient = speedCoefficient
+        self.roadIndex = roadIndex
         self.directionIndex = directionIndex
         self.currentLaneIndex = currentLaneIndex
         self.desiredLaneIndex = self.currentLaneIndex
@@ -57,6 +59,7 @@ class Vehicle:
         self.originalImage = image
         self.rotatedImage = self.originalImage
         self.rect = image.get_rect()
+        self.mask = mask.from_surface(self.originalImage) 
         self.update_vehicle_edges_and_corners()
 
         
@@ -101,11 +104,11 @@ class Vehicle:
             self.switch_lane(allHazards['vehicle_ahead'], allHazards['vehicles_left'], allHazards['vehicles_right'], road, allHazards['vehicles_front'])
         
         nextTargetPosition = road.get_target_position(self.directionIndex, self.desiredLaneIndex, self.targetPositionIndex + 1)
-        self.update_vehicle_location(nextTargetPosition, self.speed) # TODO add target position somehow
+        self.update_vehicle_location(nextTargetPosition, self.speed) 
         
-        #TODO implement lane swap
+       
         #TODO implement rest of decision
-        pass 
+   
     
     def calculate_safe_distance(self, avgDistance: float) -> float:
         """
@@ -129,11 +132,7 @@ class Vehicle:
                 else:
                     differenceInPercentage = 100 - ((vehicleAheadSpeed / desiredSpeed) * 100)
                     if differenceInPercentage >= 15:
-                        #TODO switch this with something that addresses speed and distance, maybe same as s_star? move to seperate function
                         distanceToVehicleAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
-                        #---- changed ----
-                        # base value was 80
-                        # changed to self.calculate_safe_distance(100)
                         if distanceToVehicleAhead < self.calculate_safe_distance(30):
                             shouldSwitchLane = True
 
@@ -151,11 +150,6 @@ class Vehicle:
                 return shouldSwitchLane
             else:
                 differenceInPercentage = 100 - ((vehicleAheadSpeed / otherLaneVehicleSpeed) * 100)
-                # speedDifference = otherLaneVehicleSpeed - vehicleAheadSpeed
-                #TODO switch this with something that addresses speed and distance, maybe same as s_star? move to seperate function
-                
-                #---- changed ----
-                # base value in distance was 120
                 if differenceInPercentage > 10 and distance > self.calculate_safe_distance(30):
                     shouldSwitchLane = True
         else:
@@ -182,9 +176,9 @@ class Vehicle:
             rightLaneIndex = road.get_right_adjacent_lane_index(self.directionIndex, self.currentLaneIndex)
             if leftLaneIndex is None and rightLaneIndex is None:
                 self.shouldSwitchLane = False
-            elif leftLaneIndex is not None and rightLaneIndex is not None:
-                pass    # if speed > other vehicle speed: left
-                        # else: right (keep right lane is a priority unless passing someone)
+            # elif leftLaneIndex is not None and rightLaneIndex is not None:
+            #     pass    # if speed > other vehicle speed: left
+            #             # else: right (keep right lane is a priority unless passing someone)
             elif leftLaneIndex == None: # can move only to the right lane
                 if self.switching_lane_decision_adjent_lane(vehicleAhead, vehiclesInFront, rightLaneIndex):
                     self.check_for_space_in_target_lane(vehiclesRight, vehicleAhead, rightLaneIndex, isLeftDirection=False)
@@ -247,7 +241,12 @@ class Vehicle:
     def rotate_vehicle(self):
         self.rotatedImage = transform.rotate(self.originalImage, self.driveAngle)
         self.rect = self.rotatedImage.get_rect(center=self.location)
-         
+        self.mask = mask.from_surface(self.rotatedImage) 
+
+    
+    def check_collision(self, other_vehicle : 'Vehicle'):
+        offset = (other_vehicle.rect.left - self.rect.left, other_vehicle.rect.top - self.rect.top)
+        return self.mask.overlap(other_vehicle.mask, offset) is not None         
     
     def set_desired_speed(self, maxSpeed : int):
         self.desiredSpeed = PixelsConverter.convert_speed_to_pixels_per_frames(self.speedCoefficient * maxSpeed)
@@ -280,7 +279,8 @@ class Vehicle:
         
         for other_vehicle in allVehicles:
             if self != other_vehicle:
-                if self.rect.colliderect(other_vehicle.rect):
+                if self.check_collision(other_vehicle):    
+                # if self.rect.colliderect(other_vehicle.rect):
                     # for corner in other_vehicle.corners:
                     #     if QuadCalculation.point_in_quad(corner, self.corners):
                     if not (self.inAccident and other_vehicle.inAccident):
@@ -419,11 +419,11 @@ class Vehicle:
 
 #---------------------Car---------------------#
 class Car(Vehicle):
-    def __init__(self, location : Vector2, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface, speed=60):
+    def __init__(self, location : Vector2, roadIndex : int, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface, speed=60):
         self.colorIndex = random.randint(0, 4)
         averageSpeedForLane = CAR_AVG_SPEED - laneIndex * PixelsConverter.convert_speed_to_pixels_per_frames(5)
         speedCoefficient = normal(averageSpeedForLane, CAR_SPEED_STANDARD_DEVIATION)
-        super().__init__(location, speedCoefficient, directionIndex, laneIndex, driveAngle, image, weight=2, width=20, length=30, speed=speed)
+        super().__init__(location, speedCoefficient, roadIndex, directionIndex, laneIndex, driveAngle, image, weight=2, width=20, length=30, speed=speed)
     
     
     
@@ -432,8 +432,8 @@ class Car(Vehicle):
     
 #--------------------Truck--------------------#
 class Truck(Vehicle):
-    def __init__(self, location : Vector2, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface, speed=60):
+    def __init__(self, location : Vector2, roadIndex : int, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface, speed=60):
         weight = normal(20, 3)
         averageSpeedForLane = TRUCK_AVG_SPEED - laneIndex * PixelsConverter.convert_speed_to_pixels_per_frames(5)
         speedCoefficient = normal(averageSpeedForLane, TRUCK_SPEED_STANDARD_DEVIATION)
-        super().__init__(location, speedCoefficient, directionIndex, laneIndex, driveAngle, image, weight=weight, width=20, length=60, speed=speed)
+        super().__init__(location, speedCoefficient, roadIndex, directionIndex, laneIndex, driveAngle, image, weight=weight, width=20, length=60, speed=speed)

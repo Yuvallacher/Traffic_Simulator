@@ -25,6 +25,11 @@ class World:
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
     
-    def __init__(self, road : Road):
-        self.road = road
+    def __init__(self, roads : list[Road]):
+        self.roads = roads
+
+
+    def get_vehicle_road(self, roadIndex : int) -> Road:
+        return self.roads[roadIndex]
+
         
