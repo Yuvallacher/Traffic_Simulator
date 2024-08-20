@@ -110,7 +110,7 @@ class Vehicle:
         #TODO implement rest of decision
    
     
-    def calculate_lane_switching_distance(self, baseDistance: float) -> float:
+    def calculate_safe_distance(self, baseDistance: float) -> float:
         """
         calculates a distance depending on politness and awarness
         """
@@ -203,10 +203,7 @@ class Vehicle:
             else:
                 distanceToClosestVehicleOnSide = self.rightEdgeOfVehicle.distance_to(closestVehicleToSide.leftEdgeOfVehicle)
             
-            #TODO switch this with something that depends on politeness
-            #---- changed ----
-            # base 70
-            if distanceToClosestVehicleOnSide > self.calculate_lane_switching_distance(40):
+            if distanceToClosestVehicleOnSide > self.calculate_safe_distance(40):
                 # if distanceToVehicleInFront > 80:
                 switchLane = True
         
