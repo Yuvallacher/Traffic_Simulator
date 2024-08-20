@@ -31,7 +31,7 @@ class VehiclesManager:
                         for vehicle in self.vehicles:
                             # if vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.laneIndex == direction.index(lane) and vehicle.location.distance_to(lane.startingPoint) <= 100:
                             if vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.currentLaneIndex == direction.index(lane):
-                                if vehicle.targetPositionIndex <= 4:
+                                if vehicle.targetPositionIndex <= 5:
                                     # TODO fix distance checking! currently checks in an "air distance" so not entirely accurate
                                     space_available = False
                                     break

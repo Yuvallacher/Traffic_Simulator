@@ -107,11 +107,11 @@ class Vehicle:
         #TODO implement rest of decision
         pass 
     
-    def calculate_safe_distance(self, avgDistance: float) -> float:
+    def calculate_lane_switching_distance(self, baseDistance: float) -> float:
         """
         calculates a distance depending on politness and awarness
         """
-        return (avgDistance + self.politeness * 5) * self.awareness
+        return (baseDistance + self.politeness * 5) * self.awareness
 
 
     def switching_lane_decision_current_lane(self, vehicleAhead : 'Vehicle') -> bool:
@@ -134,13 +134,13 @@ class Vehicle:
                         #---- changed ----
                         # base value was 80
                         # changed to self.calculate_safe_distance(100)
-                        if distanceToVehicleAhead < self.calculate_safe_distance(30):
+                        if distanceToVehicleAhead < self.calculate_lane_switching_distance(30):
                             shouldSwitchLane = True
 
         return shouldSwitchLane
     
 
-    def switching_lane_decision_adjent_lane(self, vehicleAhead : 'Vehicle', vehiclesInFront : list['Vehicle'], targetLaneIndex : int) -> bool: #TODO Change function name
+    def switching_lane_decision_adjacent_lane(self, vehicleAhead : 'Vehicle', vehiclesInFront : list['Vehicle'], targetLaneIndex : int) -> bool: #TODO Change function name
         shouldSwitchLane = False
         closestFrontVehicleOnAdjacentLane = self.get_closest_vehicle(vehiclesInFront, targetLaneIndex, "front", checkAllLanes=False)
         if closestFrontVehicleOnAdjacentLane is not None:
@@ -156,7 +156,7 @@ class Vehicle:
                 
                 #---- changed ----
                 # base value in distance was 120
-                if differenceInPercentage > 10 and distance > self.calculate_safe_distance(30):
+                if differenceInPercentage > 10 and distance > self.calculate_lane_switching_distance(40):
                     shouldSwitchLane = True
         else:
             shouldSwitchLane = True
@@ -186,10 +186,10 @@ class Vehicle:
                 pass    # if speed > other vehicle speed: left
                         # else: right (keep right lane is a priority unless passing someone)
             elif leftLaneIndex == None: # can move only to the right lane
-                if self.switching_lane_decision_adjent_lane(vehicleAhead, vehiclesInFront, rightLaneIndex):
+                if self.switching_lane_decision_adjacent_lane(vehicleAhead, vehiclesInFront, rightLaneIndex):
                     self.check_for_space_in_target_lane(vehiclesRight, vehicleAhead, rightLaneIndex, isLeftDirection=False)
             else: # can move to the left lane
-                if self.switching_lane_decision_adjent_lane(vehicleAhead, vehiclesInFront, leftLaneIndex):
+                if self.switching_lane_decision_adjacent_lane(vehicleAhead, vehiclesInFront, leftLaneIndex):
                     self.check_for_space_in_target_lane(vehiclesLeft, vehicleAhead, leftLaneIndex, isLeftDirection=True)
 
             
@@ -212,7 +212,7 @@ class Vehicle:
             #TODO switch this with something that depends on politeness
             #---- changed ----
             # base 70
-            if distanceToClosestVehicleOnSide > self.calculate_safe_distance(30):
+            if distanceToClosestVehicleOnSide > self.calculate_lane_switching_distance(40):
                 # if distanceToVehicleInFront > 80:
                 switchLane = True
         
