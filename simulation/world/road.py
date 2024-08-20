@@ -52,8 +52,7 @@ class RoadBuilder:
         elif 'junction' in roadName:
             roads = RoadBuilder.junction_road_read_lanes_from_file(startingNumberOfLanes, roadName)
         
-        # images, imagesPos = RoadBuilder.load_lane_images(roadName)
-        # return Road(startingNumberOfLanes, lanes, images, imagesPos)
+     
         return roads
         
     @staticmethod
@@ -84,22 +83,6 @@ class RoadBuilder:
             return roadsList
     
     
-    # @staticmethod
-    # def load_lane_images(roadName : str) -> list[list]: # TODO implement and move to inheriting classes
-    #     with open("jsons\\road.json", 'r') as file:
-    #         data = json.load(file)
-    #         if "straight" in roadName:
-    #             roadData = data["straight_road"]
-    #         elif "junction_road" in roadName:
-    #             roadData = data["junction_road"]
-            
-    #         imagesPaths = roadData["images_path"]
-    #         imagesScales = roadData["images_scales"]
-    #         imagesPos = roadData["image_pos"]
-    #         images = []
-    #         for index, imagePath in enumerate(imagesPaths):
-    #             images.append(pygame.transform.scale(pygame.image.load(imagePath), imagesScales[index])) #TODO add scale? if so, what scale            
-    #         return [images, imagesPos]
 
     @staticmethod
     def load_lane_images(roadData : dict) -> list[list]: # TODO implement and move to inheriting classes
