@@ -1,40 +1,35 @@
-@seanbar2000 :
+PROJECTS:
 
-create new road pictures (e.g. two-way straight road with a continous seperating line! currently we incorrectly use the one-way straight road pictures)
-    scale road pictures and put in the correct place on the screen!!!!
+1. accident detection and handling
+    self.shouldSwitchLane = True
+    emergency lane switching - lower the distance threshold to allow for more "close" switches
+    despawn vehicles in accidents after some time (3 seconds?)
 
-
-
-@orenlan1 :
-
-create new road types - curve, plus-junction, T-junction (maybe juncion class and then inheritence?)
+2. create new road types - curve, plus-junction, T-junction (maybe juncion class and then inheritence?)
     when adding a new road type: 
         add data to JSON
         add RoadBuilder method to read from JSON (like RoadBuilder.straight_road_read_lanes_from_file)
+        visualisation:
+            create new road pictures (e.g. two-way straight road with a continous seperating line! currently we incorrectly use the one-way straight road pictures)
+            scale road pictures and put in the correct place on the screen!!!!
+
+3. finishing touches on vehicle model
+
+4. add hazards - traffric lights, signs, horse on road (road works), etc.
+
+5. add curve mishandling - possibility of entering opposite lane if entering a curve at high speeds
+
+6. add user interface with scrollers, buttons and stuff like that to allow users to controll the environment variables
 
 
 
-@Yuvallacher :
-
-CREATE, FIX AND IMPROVE VEHICLE'S AI MODEL!!!!!!11!1111!!1!!1 
-    fix deceleration distance / timing
-    add case of selection between two possible lanes
-    add politeness coefficient to truck and car, truck is more polite
-    add awareness to world
-        add awareness coefficient to truck and car, truck is more aware
-    
 
 
-@orenlan1 @seanbar2000 @Yuvallacher :
 
-add documentation to difficult to understand function (in the """ comment """ way)
+EXTRA (if have time):
 
-change all the drawRoad, drawCar functions in main.py (possibly delete them and write new functions)
+1. add documentation to difficult to understand function (in the """ comment """ way)
 
-add user interface with scrollers, buttons and stuff like that to allow users to controll the environment variables
+2. change all the drawRoad, drawCar functions in main.py (possibly delete them and write new functions)
 
-accident detection and handling
-    self.shouldSwitchLane = True
-    emergency lane switching - lower the distance threshold to allow for more "close" switches
-
-if we have time - add pedestrians to crosswalks
+3. add background colors / pictures
