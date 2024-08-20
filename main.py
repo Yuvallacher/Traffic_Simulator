@@ -11,10 +11,6 @@ roads = RoadBuilder.create_road("junction", 0)
 #roads = RoadBuilder.create_road("straight", 2)
 
 
-# road = RoadBuilder.create_road("straight", 2)
-# roadsList = []
-# roadsList.append(road)
-# roads = RoadBuilder.junction_road_read_lanes_from_file(1,"junction_road")
 #world creation
 simulationWorld = World(roads)
 simulationRunning = True
