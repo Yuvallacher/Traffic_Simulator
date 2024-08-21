@@ -60,24 +60,24 @@ class RoadBuilder:
         with open("jsons\\road.json", 'r') as file:
             data = json.load(file)
 
-            road_data = data['straight_road']
-            lanes_data = road_data['lanes']
+            roadData = data['straight_road']
+            lanesData = roadData['lanes']
 
-            lanes_direction_1 = []
-            lanes_direction_2 = []
+            lanesDirection1 = []
+            lanesDirection2 = []
             roadsList = []
             
-            for idx, lane_coordinates in enumerate(lanes_data):
+            for idx, laneCoordinates in enumerate(lanesData):
                 if idx < 2 * startingNumberOfLanes:
-                    path = [Vector2(coord) for coord in lane_coordinates]
+                    path = [Vector2(coord) for coord in laneCoordinates]
                     lane = Road.Lane(path)
 
                     if idx % 2 == 0:
-                        lanes_direction_1.append(lane) # (left-to-right driving direction)
+                        lanesDirection1.append(lane) # (left-to-right driving direction)
                     else:
-                        lanes_direction_2.append(lane) # (right-to-left driving direction)
-            images, imagesPos = RoadBuilder.load_lane_images(road_data)
-            roadDirections = [lanes_direction_1, lanes_direction_2]
+                        lanesDirection2.append(lane) # (right-to-left driving direction)
+            images, imagesPos = RoadBuilder.load_lane_images(roadData)
+            roadDirections = [lanesDirection1, lanesDirection2]
             road = Road(startingNumberOfLanes, roadDirections, images, imagesPos)
             roadsList.append(road)
             return roadsList
@@ -101,34 +101,33 @@ class RoadBuilder:
             
             data = json.load(file)
             roadsList = []
-            road_data = data['junction_road']
-            lanes_data = road_data['lanes']
+            roadData = data['junction_road']
+            lanesData = roadData['lanes']
 
-            lanes_direction_1 = []
-            lanes_direction_2 = []
-            imagesPaths = road_data["images_path"]
-            imagesScales = road_data["images_scales"]
-            imagesPos = road_data["image_pos"]
+            lanesDirection1 = []
+            lanesDirection2 = []
+            imagesPaths = roadData["images_path"]
+            imagesScales = roadData["images_scales"]
+            imagesPos = roadData["image_pos"]
             
 
             #TODO add a way to limit user - only 1 or 2 lanes in each direction           
-            for idx, lane_coordinates in enumerate(lanes_data):
+            for idx, lane_coordinates in enumerate(lanesData):
                 path = [Vector2(coord) for coord in lane_coordinates]
                 lane = Road.Lane(path)
 
                 if idx % 2 == 0:
-                    lanes_direction_1.append(lane) # (left-to-right driving direction)
+                    lanesDirection1.append(lane) # (left-to-right driving direction)
                 else:
-                    lanes_direction_2.append(lane) # (right-to-left driving direction)
-                    roadDirections = [lanes_direction_1, lanes_direction_2]
+                    lanesDirection2.append(lane) # (right-to-left driving direction)
+                    roadDirections = [lanesDirection1, lanesDirection2]
                     road = Road(startingNumberOfLanes, roadDirections, imagesScales, imagesPos)
                     roadsList.append(road)
-                    lanes_direction_1 = []
-                    lanes_direction_2 = []
+                    lanesDirection1 = []
+                    lanesDirection2 = []
                     
 
             return roadsList  
 
-
-
+    
 

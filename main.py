@@ -12,8 +12,9 @@ from simulation.world.junction import JunctionBuilder
 roads = RoadBuilder.create_road("junction", 0)
 #roads = RoadBuilder.create_road("straight", 2)
 
-junction = JunctionBuilder.create_junction_from_file('junction_road')
 
+# junction = JunctionBuilder.create_junction_from_file('junction_road')
+# junctionDicts = RoadBuilder.read_junctions_from_json()
 #world creation
 simulationWorld = World(roads)
 simulationRunning = True
