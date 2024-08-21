@@ -7,10 +7,12 @@ from simulation.manager.vehicles_manager import VehiclesManager
 from drawings.vehicle_drawer import VehicleDrawer
 from simulation.data.DataManager import DataManager
 from simulation.data.Accident import AccidentManager
+from simulation.world.junction import JunctionBuilder
 
 roads = RoadBuilder.create_road("junction", 0)
 #roads = RoadBuilder.create_road("straight", 2)
 
+junction = JunctionBuilder.create_junction_from_file('junction_road')
 
 #world creation
 simulationWorld = World(roads)

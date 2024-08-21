@@ -24,20 +24,25 @@ class Junction:
 
 
 
+
+
+
+
+class JunctionBuilder:
     # dictionary of lane id keys to dictionaries of lane id keys and their list of coordinates
     @staticmethod
-    def read_junction_coordinates_from_file(roadName : str) -> dict[int,dict[int,list[Vector2]]]: 
+    def create_junction_from_file(roadName : str) -> dict[int,dict[int,list[Vector2]]]: 
         with open("jsons\\road.json", 'r') as file:
             data = json.load(file)
             road_data = data[roadName]
             junction_data = road_data['roads_junction']
             junction_dict = {}
-               
+            
             for key, value in junction_data.items():
                 main_key, sub_key = map(int, key.strip("()").split(","))
                 if main_key not in junction_dict:
                     junction_dict[main_key] = {}
                 
-                junction_dict[main_key][sub_key] = value
+                junction_dict[main_key][sub_key] = value[1]
                 
             return junction_dict
