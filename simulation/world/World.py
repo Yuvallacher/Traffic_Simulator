@@ -10,7 +10,7 @@ class World:
     LANE_SIZE = 20
     NUMBER_OF_LANES = 5
 
-    MAX_SPEED = 100
+    MAX_SPEED = 60
     FREQUENCY = 10
     POLITENESS = 8
     AWARENESS = 1

@@ -8,11 +8,10 @@ from drawings.vehicle_drawer import VehicleDrawer
 from simulation.data.DataManager import DataManager
 from simulation.data.Accident import AccidentManager
 
- 
-# road = RoadBuilder.create_road("straight", 2)
-# roadsList = []
-# roadsList.append(road)
-roads = RoadBuilder.junction_road_read_lanes_from_file(1,"junction_road")
+roads = RoadBuilder.create_road("junction", 0)
+#roads = RoadBuilder.create_road("straight", 2)
+
+
 #world creation
 simulationWorld = World(roads)
 simulationRunning = True
@@ -39,7 +38,7 @@ accidentManager =  AccidentManager()
 
 while simulationRunning:
     screen.fill(simulationWorld.WHITE)
-    # screen.blit(road.laneImages[road.currNumOfLanes * 2 - 1], road.imagesPositions[road.currNumOfLanes * 2 - 1]) #TODO renove this late, this is for testing only
+    #screen.blit(roads[0].laneImages[roads[0].currNumOfLanes * 2 - 1], roads[0].imagesPositions[roads[0].currNumOfLanes * 2 - 1]) #TODO renove this late, this is for testing only
     screen.blit(pygame.image.load("roadPictures\\junctionRoad.png"),[0, 10])
     # vehiclesManager.add_vehicles(road.allLanesInRoad, simulationWorld)
     vehiclesManager.add_vehicles(simulationWorld, screen)
