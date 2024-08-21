@@ -1,5 +1,7 @@
 from calculations.pixels_calculations import PixelsConverter
 from simulation.data.DataManager import DataManager
+from simulation.data.Accident import Accident
+from simulation.data.Accident import AccidentManager
 from calculations.polygon_calculations import QuadCalculation
 from simulation.world.World import World
 from simulation.world.World import Road
@@ -43,6 +45,7 @@ class Vehicle:
         self.desiredLaneIndex = self.currentLaneIndex
         self.targetPositionIndex = 0
         self.inAccident = False
+        self.accident : Accident = None
         self.shouldSwitchLane = False
         self.activelySwitchingLane = False
         self.finishedSwitchingLane = False
@@ -84,11 +87,11 @@ class Vehicle:
         self.corners = [self.frontLeftCorner, self.frontRightcorner, self.backRightCorner, self.backLeftCorner]
 
         
-    def drive(self, allVehicles : list['Vehicle'], world: World, dataManager : DataManager, road : Road):
+    def drive(self, allVehicles : list['Vehicle'], world: World, dataManager : DataManager, accidentManager : AccidentManager, road : Road):
         """
         scan the surroundings, compute the next decision and execute it
         """
-        allHazards = self.get_all_harazds_around_vehicle(allVehicles, road, dataManager)
+        allHazards = self.get_all_harazds_around_vehicle(allVehicles, road, dataManager, accidentManager)
         if not self.inAccident:
             self.make_next_desicion(road, world, allHazards, dataManager)
         
@@ -269,7 +272,7 @@ class Vehicle:
             return self.create_fov_boundary(direction, angle1, angle2, 200)
     
     
-    def get_all_harazds_around_vehicle(self, allVehicles : list['Vehicle'], road : Road, dataManager : DataManager) -> dict:
+    def get_all_harazds_around_vehicle(self, allVehicles : list['Vehicle'], road : Road, dataManager : DataManager, accidentManager : AccidentManager) -> dict:
         """
         The vehicle scans its sorroundings for hazards, oncoming traffic, and other variables that can influence the driver's decision
         """
@@ -289,25 +292,19 @@ class Vehicle:
         rightSideFov = self.create_fov_boundary(direction, 20, 170, 200)
         #TODO: more checks for surroundings like hazards, turns, etc.
         
-        for other_vehicle in allVehicles:
-            if self != other_vehicle:
-                if self.check_collision(other_vehicle):    
-                    if not (self.inAccident and other_vehicle.inAccident):
-                        dataManager.log_accident(type(self).__name__, type(other_vehicle).__name__, PixelsConverter.convert_pixels_per_frames_to_speed(self.speed), PixelsConverter.convert_pixels_per_frames_to_speed(other_vehicle.speed))
-                    self.inAccident = True
-                    self.speed = 0
-                    self.desiredSpeed = 0
-                    other_vehicle.inAccident = True
-                    other_vehicle.speed = 0
-                    other_vehicle.desiredSpeed = 0
+        for otherVehicle in allVehicles:
+            if self != otherVehicle:
+                if self.check_collision(otherVehicle):    
+                    if not (self.inAccident and otherVehicle.inAccident):
+                        self.handle_accident(otherVehicle, dataManager, accidentManager)
                     return surroundings
-            
-                if self.is_object_in_fov(other_vehicle.corners, frontFov[0], frontFov[1], 200):
-                    surroundings['vehicles_front'].append(other_vehicle)
-                if self.is_object_in_fov(other_vehicle.corners, leftSideFov[0], leftSideFov[1], 200):
-                    surroundings['vehicles_left'].append(other_vehicle)
-                if self.is_object_in_fov(other_vehicle.corners, rightSideFov[0], rightSideFov[1], 200):
-                    surroundings['vehicles_right'].append(other_vehicle)
+                
+                if self.is_object_in_fov(otherVehicle.corners, frontFov[0], frontFov[1], 200):
+                    surroundings['vehicles_front'].append(otherVehicle)
+                if self.is_object_in_fov(otherVehicle.corners, leftSideFov[0], leftSideFov[1], 200):
+                    surroundings['vehicles_left'].append(otherVehicle)
+                if self.is_object_in_fov(otherVehicle.corners, rightSideFov[0], rightSideFov[1], 200):
+                    surroundings['vehicles_right'].append(otherVehicle)
                 
         # drawings of fovs - DELETE LATER
         # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + frontFov[0]), 1)
@@ -321,7 +318,28 @@ class Vehicle:
                 
         surroundings['vehicle_ahead'] = self.get_closest_vehicle(surroundings['vehicles_front'], self.desiredLaneIndex, 'front', checkAllLanes=True)
         return surroundings
-    
+
+    def handle_accident(self, otherVehicle : 'Vehicle', dataManager : DataManager, accidentManager : AccidentManager):
+        if self.inAccident:
+            self.accident.vehicles.append(otherVehicle)
+            otherVehicle.accident = self.accident
+        elif otherVehicle.inAccident:
+            otherVehicle.accident.vehicles.append(self)
+            self.accident = otherVehicle.accident
+        else:
+            newAccident = accidentManager.add_accident()
+            newAccident.vehicles.append(self)
+            newAccident.vehicles.append(otherVehicle)
+            self.accident = newAccident
+            otherVehicle.accident = newAccident
+        
+        dataManager.log_accident(type(self).__name__, type(otherVehicle).__name__, PixelsConverter.convert_pixels_per_frames_to_speed(self.speed), PixelsConverter.convert_pixels_per_frames_to_speed(otherVehicle.speed), self.accident.id)
+        self.inAccident = True
+        self.speed = 0
+        self.desiredSpeed = 0
+        otherVehicle.inAccident = True
+        otherVehicle.speed = 0
+        otherVehicle.desiredSpeed = 0
 
     #TODO move to calculations ?
     def create_fov_boundary(self, direction : Vector2, leftAngle : float, rightAngle : float, fovDistance : int):

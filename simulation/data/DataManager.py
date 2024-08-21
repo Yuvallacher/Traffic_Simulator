@@ -10,7 +10,7 @@ class DataManager:
         self.filename = filename
         self.export_interval = export_interval
         self.stats_data = pd.DataFrame(columns=['Time Stamp', 'Average Speed', 'Density'])
-        self.accidents_data = pd.DataFrame(columns=['Time Stamp', 'Vehicle Types', 'Speeds At Crash Time (km\h)'])
+        self.accidents_data = pd.DataFrame(columns=['Time Stamp', 'Vehicle Types', 'Speeds At Crash Time (km\h)', 'Accident ID'])
         self._start_export_thread()
 
     def _start_export_thread(self):
@@ -34,14 +34,15 @@ class DataManager:
         })
         self.stats_data = pd.concat([self.stats_data, new_data], ignore_index=True)
 
-    def log_accident(self, vehicle_1_Type : str, vehicle_2_Type : str, vehicle_1_Speed : float, vehicle_2_Speed : float):
+    def log_accident(self, vehicle_1_Type : str, vehicle_2_Type : str, vehicle_1_Speed : float, vehicle_2_Speed : float, accidentID : int):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         vehicle_types = f"{vehicle_1_Type} and {vehicle_2_Type}"
         speeds = "{:.2f} and {:.2f}".format(vehicle_1_Speed, vehicle_2_Speed)
         new_data = pd.DataFrame({
             'Time Stamp': [current_time],
             'Vehicle Types': [vehicle_types],
-            'Speeds At Crash Time (km\h)': [speeds]
+            'Speeds At Crash Time (km\h)': [speeds],
+            'Accident ID': [accidentID]
         })
         self.accidents_data = pd.concat([self.accidents_data, new_data], ignore_index=True)
 

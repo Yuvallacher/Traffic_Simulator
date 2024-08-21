@@ -6,6 +6,7 @@ from simulation.world.World import World
 from simulation.manager.vehicles_manager import VehiclesManager
 from drawings.vehicle_drawer import VehicleDrawer
 from simulation.data.DataManager import DataManager
+from simulation.data.Accident import AccidentManager
 
  
 # road = RoadBuilder.create_road("straight", 2)
@@ -23,7 +24,7 @@ simulationRunning = True
 def updateCarPos(vehicles: list[Vehicle], simulationWorld : World, dataManager : DataManager): #TODO probably move to a different place
     for vehicle in vehicles:
         vehicleRoad = simulationWorld.get_vehicle_road(vehicle.roadIndex)
-        vehicle.drive(vehicles, simulationWorld, dataManager, vehicleRoad)
+        vehicle.drive(vehicles, simulationWorld, dataManager, accidentManager, vehicleRoad)
 
 screen = pygame.display.set_mode((simulationWorld.SCREEN_WIDTH, simulationWorld.SCREEN_HEIGHT))
 vehiclesManager = VehiclesManager(simulationWorld.NUMBER_OF_CARS)
@@ -34,7 +35,7 @@ clock = pygame.time.Clock()
 #dataManager
 dataManager = DataManager(filename='simulation_data.xlsx', export_interval=2)
 next_stat_update = pygame.time.get_ticks() + dataManager.export_interval * 1000  # Convert seconds to milliseconds
-
+accidentManager =  AccidentManager()
 
 while simulationRunning:
     screen.fill(simulationWorld.WHITE)
@@ -55,6 +56,15 @@ while simulationRunning:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             simulationRunning = False
+
+    delete = [key for key in accidentManager.allAccidents.keys() if accidentManager.allAccidents[key].check_if_3_seconds_elapsed()]
+    for key in delete:
+        accidentManager.allAccidents[key].remove_accident(vehiclesManager.vehicles)
+        del accidentManager.allAccidents[key]
+    # for accidentID in accidentManager.allAccidents.keys():
+    #     if accidentManager.allAccidents[accidentID].check_if_3_seconds_elapsed():
+    #         accidentManager.allAccidents[accidentID].remove_accident(vehiclesManager.vehicles)
+    #         del accidentManager.allAccidents[accidentID]
 
     pygame.display.update()
     clock.tick(simulationWorld.FPS)
