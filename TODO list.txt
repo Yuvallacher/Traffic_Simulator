@@ -13,13 +13,15 @@ PROJECTS:
             create new road pictures (e.g. two-way straight road with a continous seperating line! currently we incorrectly use the one-way straight road pictures)
             scale road pictures and put in the correct place on the screen!!!!
 
-3. finishing touches on vehicle model
+3. close excel file properly when exiting the program!! to avoid file corruption
 
-4. add hazards - traffric lights, signs, horse on road (road works), etc.
+4. finishing touches on vehicle model
 
-5. add user interface with scrollers, buttons and stuff like that to allow users to controll the environment variables
+5. add hazards - traffric lights, signs, horse on road (road works), etc.
 
-6. add curve mishandling - possibility of entering opposite lane if entering a curve at high speeds
+6. add user interface with scrollers, buttons and stuff like that to allow users to controll the environment variables
+
+7. add curve mishandling - possibility of entering opposite lane if entering a curve at high speeds
 
 
 

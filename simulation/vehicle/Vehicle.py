@@ -44,6 +44,10 @@ class Vehicle:
         self.currentLaneIndex = currentLaneIndex
         self.desiredLaneIndex = self.currentLaneIndex
         self.targetPositionIndex = 0
+        self.inJunction = False
+        self.desiredJunctionRoadIndex = self.roadIndex
+        self.desiredJunctionsLaneIndex = self.currentLaneIndex
+        self.junctionIndex : int
         self.inAccident = False
         self.accident : Accident = None
         self.shouldSwitchLane = False
@@ -100,23 +104,38 @@ class Vehicle:
         """
         compute and execute the next decision based on the surroindings
         """
-        self.accelerateAndBreak(allHazards['vehicle_ahead'], world.POLITENESS)
+        self.accelerateAndBreak(allHazards['vehicle_ahead'], allHazards['hazard_ahead'], world.POLITENESS)
         
-        if self.finishedSwitchingLane:
-            self.finishedSwitchingLane = False
-            self.shouldSwitchLane = False
-        else:
-            self.shouldSwitchLane = self.switching_lane_decision_current_lane(allHazards['vehicle_ahead'])
+        if not self.inJunction:
+            if self.finishedSwitchingLane:
+                self.finishedSwitchingLane = False
+                self.shouldSwitchLane = False
+            else:
+                self.shouldSwitchLane = self.switching_lane_decision_current_lane(allHazards['vehicle_ahead'])
+            
+            if self.shouldSwitchLane or self.activelySwitchingLane:
+                self.switch_lane(allHazards['vehicle_ahead'], allHazards['vehicles_left'], allHazards['vehicles_right'], road, allHazards['vehicles_front'])
+            
+            nextTargetPosition = road.get_target_position(self.directionIndex, self.desiredLaneIndex, self.targetPositionIndex + 1)
+            startOfJunction, pathOptions, self.junctionIndex = road.is_start_of_junction(nextTargetPosition, self.directionIndex)
+            if startOfJunction:
+                self.desiredJunctionRoadIndex, self.desiredJunctionsLaneIndex = self.draw_desired_junction_path(pathOptions)
+                self.targetPositionIndex = 0
+                self.inJunction = True
+                
+        if self.inJunction:
+            nextTargetPosition = road.get_target_position_junction(self.junctionIndex, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsLaneIndex, self.targetPositionIndex + 1)
         
-        if self.shouldSwitchLane or self.activelySwitchingLane:
-            self.switch_lane(allHazards['vehicle_ahead'], allHazards['vehicles_left'], allHazards['vehicles_right'], road, allHazards['vehicles_front'])
-        
-        nextTargetPosition = road.get_target_position(self.directionIndex, self.desiredLaneIndex, self.targetPositionIndex + 1)
         self.update_vehicle_location(nextTargetPosition, self.speed) 
         
        
-        #TODO implement rest of decision
    
+    def draw_desired_junction_path(self, pathOptions : dict) -> list[str, str]:
+        keys = list(pathOptions.keys())
+        numberOfOptions = len(keys)
+        chosenKeyIndex = random.randint(0, numberOfOptions - 1)
+        return keys[chosenKeyIndex].strip("[]").split(",")
+    
     
     def calculate_safe_distance(self, baseDistance: float) -> float:
         """
@@ -281,6 +300,7 @@ class Vehicle:
         surroundings['vehicles_left'] = []
         surroundings['vehicles_right'] = []
         surroundings['vehicle_ahead'] = None
+        surroundings['hazard_ahead'] = None
         
         targetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex)
         if self.targetPositionIndex <= 1 or targetPosition == self.location:
@@ -395,7 +415,7 @@ class Vehicle:
             return currentVehicleInDirection
     
     
-    def accelerateAndBreak(self, vehicleAhead: 'Vehicle', politeness: int):
+    def accelerateAndBreak(self, vehicleAhead: 'Vehicle', hazaradAhead : any, politeness: int):
         """
         Calculates and updates a vehicle's speed according to the road's conditions - other vehicles, hazards, etc.
         """
