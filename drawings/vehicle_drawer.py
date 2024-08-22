@@ -29,7 +29,7 @@ class VehicleDrawer:
     @staticmethod
     def draw_vehicles(vehicles : list[Vehicle], screen):
         for vehicle in vehicles:
-            screen.blit(vehicle.rotatedImage, vehicle.rect.topleft)
+            screen.blit(vehicle.rotatedImage.convert_alpha(), vehicle.rect.topleft)
                 
             # pygame.draw.rect(screen, (0, 255, 0), vehicle.rect, 2)
             # VehicleDrawer.draw_hitbox(screen, vehicle)

@@ -46,7 +46,7 @@ class Vehicle:
         self.targetPositionIndex = 0
         self.inJunction = False
         self.desiredJunctionRoadIndex = self.roadIndex
-        self.desiredJunctionsLaneIndex = self.currentLaneIndex
+        self.desiredJunctionsDirectionIndex = self.directionIndex
         self.junctionIndex : int
         self.inAccident = False
         self.accident : Accident = None
@@ -119,12 +119,20 @@ class Vehicle:
             nextTargetPosition = road.get_target_position(self.directionIndex, self.desiredLaneIndex, self.targetPositionIndex + 1)
             startOfJunction, pathOptions, self.junctionIndex = road.is_start_of_junction(nextTargetPosition, self.directionIndex)
             if startOfJunction:
-                self.desiredJunctionRoadIndex, self.desiredJunctionsLaneIndex = self.draw_desired_junction_path(pathOptions)
+                self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex = self.draw_desired_junction_path(pathOptions)
                 self.targetPositionIndex = 0
                 self.inJunction = True
-                
+                self.set_desired_speed(40)
+               
         if self.inJunction:
-            nextTargetPosition = road.get_target_position_junction(self.junctionIndex, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsLaneIndex, self.targetPositionIndex + 1)
+            nextTargetPosition = road.get_target_position_junction(self.junctionIndex, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.targetPositionIndex + 1)
+            endOfJunction, targetPositionIndex = road.is_end_of_junction(nextTargetPosition, self.junctionIndex, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex)
+            if endOfJunction:
+                self.inJunction = False
+                self.targetPositionIndex = targetPositionIndex
+                self.roadIndex = int(self.desiredJunctionRoadIndex)
+                self.directionIndex = int(self.desiredJunctionsDirectionIndex)
+                self.set_desired_speed(world.MAX_SPEED)
         
         self.update_vehicle_location(nextTargetPosition, self.speed) 
         
@@ -199,7 +207,7 @@ class Vehicle:
                 self.finishedSwitchingLane = True
             return
         else: 
-            leftLaneIndex = road.get_left_adjacent_lane_index(self.directionIndex, self.currentLaneIndex)
+            leftLaneIndex = road.get_left_adjacent_lane_index(self.currentLaneIndex)
             rightLaneIndex = road.get_right_adjacent_lane_index(self.directionIndex, self.currentLaneIndex)
             if leftLaneIndex is None and rightLaneIndex is None:
                 self.shouldSwitchLane = False
@@ -449,21 +457,6 @@ class Vehicle:
 
             self.speed += acceleration * 0.0167
             
-            # # Acceleration
-            # if distanceToVehicleAhead > s_star:  # Prevent division by zero
-            #     # if vehicleAhead.speed != 0:
-            #     #     acceleration = max_acceleration * (1 - (v / vehicleAhead.speed)**delta - (s_star / d)**2)
-            #     # else:
-            #     acceleration = maxAcceleration * (1 - (self.speed / self.desiredSpeed)**delta - (s_star / distanceToVehicleAhead)**2)
-            # else:
-            #     acceleration = -comfortableDeceleration  # Decelerate if too close
-        
-            # self.speed += acceleration * 0.0167
-
-
-            # if vehicleAhead.speed > self.speed:
-            #     self.speed = vehicleAhead.speed - PixelsConverter.convert_speed_to_pixels_per_frames(5)
-
             # Ensure speed is not negative
             self.speed = max(self.speed, 0)
 

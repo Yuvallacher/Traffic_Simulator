@@ -37,11 +37,11 @@ class Road:
         return False, None, -1
     
     
-    def get_target_position_junction(self, junctionIndex : int, sourceDirectionIndex : int, destRoadIndex : str, destLaneIndex : str, currentTargetPositionIndex : int) -> Vector2:
+    def get_target_position_junction(self, junctionIndex : int, sourceDirectionIndex : int, destRoadIndex : str, destDirectionIndex : str, currentTargetPositionIndex : int) -> Vector2:
         """
         while in a junction, check for the next target position
         """
-        destChoiceIndex = f"[{destRoadIndex},{destLaneIndex}]"
+        destChoiceIndex = f"[{destRoadIndex},{destDirectionIndex}]"
         path = self.junctions[junctionIndex][str(sourceDirectionIndex)][destChoiceIndex][1]
         if currentTargetPositionIndex + 1 < len(path):
             return path[currentTargetPositionIndex] 
@@ -49,7 +49,15 @@ class Road:
             return path[-1]
         
     
-    def get_left_adjacent_lane_index(self, directionIndex : int, laneIndex : int) -> int:
+    def is_end_of_junction(self, targetPosition : Vector2, junctionIndex : int, sourceDirectionIndex : int, destRoadIndex : str, destDirectionIndex : str) -> list[bool, int]:
+        destChoiceIndex = f"[{destRoadIndex},{destDirectionIndex}]"
+        path = self.junctions[junctionIndex][str(sourceDirectionIndex)][destChoiceIndex][1]
+        if targetPosition == path[-1]:
+            return True, self.junctions[junctionIndex][str(sourceDirectionIndex)][destChoiceIndex][0]
+        return False, -1
+    
+    
+    def get_left_adjacent_lane_index(self, laneIndex : int) -> int:
         if laneIndex == 0:
             return None
         else:

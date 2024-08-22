@@ -38,7 +38,7 @@ accidentManager =  AccidentManager()
 while simulationRunning:
     screen.fill(simulationWorld.WHITE)
     # screen.blit(roads[0].laneImages[roads[0].currNumOfLanes * 2 - 1], roads[0].imagesPositions[roads[0].currNumOfLanes * 2 - 1]) #TODO renove this late, this is for testing only
-    screen.blit(pygame.image.load("roadPictures\\junctionRoad.png"), [0, 10])
+    screen.blit(pygame.image.load("roadPictures\\junctionRoad.png").convert(), [0, 10])
     vehiclesManager.add_vehicles(simulationWorld, screen)
     updateCarPos(vehiclesManager.vehicles, simulationWorld, dataManager, accidentManager)
     VehicleDrawer.draw_vehicles(vehiclesManager.vehicles, screen)
