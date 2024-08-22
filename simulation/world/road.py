@@ -31,9 +31,10 @@ class Road:
         """
         if self.junctions is not None:
             for junction in self.junctions:
-                for key in junction[str(sourceDirectionIndex)].keys():
-                    if Vector2(junction[str(sourceDirectionIndex)][key][1][0]) == targetPosition:
-                        return True, junction[str(sourceDirectionIndex)], self.junctions.index(junction)
+                if junction.get(str(sourceDirectionIndex)) is not None:
+                    for key in junction[str(sourceDirectionIndex)].keys():
+                        if Vector2(junction[str(sourceDirectionIndex)][key][1][0]) == targetPosition:
+                            return True, junction[str(sourceDirectionIndex)], self.junctions.index(junction)
         return False, None, -1
     
     
