@@ -1,9 +1,11 @@
+import simulation.data.Accident
+import simulation.data.DataManager
 from simulation.world.World import World
-#from simulation.world.Point import Point
 from simulation.vehicle.Vehicle import Vehicle
 from simulation.vehicle.Vehicle import Car
 from simulation.vehicle.Vehicle import Truck
 from simulation.world.road import Road
+import simulation.data
 from pygame.math import Vector2
 from pygame import Surface
 from drawings.vehicle_drawer import VehicleDrawer
@@ -33,17 +35,14 @@ class VehiclesManager:
                             if random.uniform(0, 1) >= 1 / (simulationWorld.FREQUENCY * 10):
                                 space_available = True
                                 for vehicle in self.vehicles:
-                                    # if vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.laneIndex == direction.index(lane) and vehicle.location.distance_to(lane.startingPoint) <= 100:
                                     if vehicle.roadIndex == roadIndex and vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.currentLaneIndex == direction.index(lane):
-                                        if vehicle.targetPositionIndex <= 6:
-                                            # TODO fix distance checking! currently checks in an "air distance" so not entirely accurate
+                                        if vehicle.targetPositionIndex <= 4:
                                             space_available = False
                                             break
                                 if space_available:
                                     vehicleCoordinates = Vector2(lane.path[0].x, lane.path[0].y)
                                     initialDirection = lane.path[1] - vehicleCoordinates
                                     driveAngle = -math.degrees(math.atan2(initialDirection.y, initialDirection.x))
-                                    #coordinates = Vector2(-simulationWorld.maxSpeed, lane.y) # TODO think how to move to start of road 
                                     directionIndex = allLanesInRoad.index(direction)
                                     laneIndex = direction.index(lane)
                                     car_probability = random.uniform(0, 1)
@@ -60,16 +59,10 @@ class VehiclesManager:
                                     self.vehicles.append(newVehicle)
                         
                         
-    # def remove_vehicles(self, allLanesInRoad : list[list[Road.Lane]], roads : list[Road]):
-
-    #     for vehicle in self.vehicles:
-    #         directionIndex = vehicle.directionIndex
-    #         laneIndex = vehicle.currentLaneIndex
-            
-    #         if vehicle.location == allLanesInRoad[directionIndex][laneIndex].path[-1]:
-    #             self.vehicles.remove(vehicle)
-
-
+    def updateCarPos(self, simulationWorld : World, dataManager : simulation.data.DataManager, accidentManager : simulation.data.Accident): #TODO probably move to a different place
+        for vehicle in self.vehicles:
+            vehicleRoad = simulationWorld.get_vehicle_road(vehicle.roadIndex)
+            vehicle.drive(self.vehicles, simulationWorld, dataManager, accidentManager, vehicleRoad)
 
     def remove_vehicles(self, roads : list[Road]):
 

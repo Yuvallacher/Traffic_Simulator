@@ -129,8 +129,8 @@ class RoadBuilder:
         imagesPos = roadData["image_pos"]
         images = []
         for index, imagePath in enumerate(imagesPaths):
-            images.append(pygame.transform.scale(pygame.image.load(imagePath), imagesScales[index])) #TODO add scale? if so, what scale            
-        return [images, imagesPos]       
+            images.append(pygame.transform.scale(pygame.image.load(imagePath), imagesScales[index]).convert())            
+        return [images, imagesPos]
 
 
     @staticmethod
@@ -147,9 +147,10 @@ class RoadBuilder:
 
             lanesDirection1 = []
             lanesDirection2 = []
-            imagesPaths = roadData["images_path"]
             # imagesScales = roadData["images_scales"]
-            imagesPos = roadData["image_pos"]
+            # imagesPaths = roadData["images_path"]
+            # imagesPos = roadData["image_pos"]
+            images, imagesPos = RoadBuilder.load_lane_images(roadData)
             
             junctions = RoadBuilder.read_junctions_from_json(data)
             roadIndex = 0
@@ -166,7 +167,7 @@ class RoadBuilder:
                     
                     roadDirections = [lanesDirection1, lanesDirection2]
                     relevantJunctions = RoadBuilder.get_relevant_junction_info(junctions, roadIndex)
-                    road = Road(startingNumberOfLanes, roadDirections, imagesPaths, imagesPos, relevantJunctions)
+                    road = Road(startingNumberOfLanes, roadDirections, images, imagesPos, relevantJunctions)
                     roadIndex += 1
                     roadsList.append(road)
                     lanesDirection1 = []

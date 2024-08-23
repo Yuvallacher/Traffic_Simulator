@@ -9,11 +9,10 @@ from numpy.random import normal
 from pygame.math import Vector2
 from pygame import transform
 from pygame import Surface
-from pygame.rect import Rect
-from pygame import mask #TRY 
+from pygame import mask
 import random
 import math
-from pygame.draw import line
+from pygame.draw import line # for debug purposes only
 
 CAR_AVG_SPEED = 0.9
 CAR_SPEED_STANDARD_DEVIATION = 0.12
@@ -364,10 +363,10 @@ class Vehicle:
         
         dataManager.log_accident(type(self).__name__, type(otherVehicle).__name__, PixelsConverter.convert_pixels_per_frames_to_speed(self.speed), PixelsConverter.convert_pixels_per_frames_to_speed(otherVehicle.speed), self.accident.id)
         self.inAccident = True
-        # self.speed = 0
+        self.speed = 0
         self.desiredSpeed = 0
         otherVehicle.inAccident = True
-        # otherVehicle.speed = 0
+        otherVehicle.speed = 0
         otherVehicle.desiredSpeed = 0
 
     #TODO move to calculations ?
@@ -469,7 +468,7 @@ class Vehicle:
 class Car(Vehicle):
     def __init__(self, screen, location : Vector2, roadIndex : int, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface, speed=60):
         self.colorIndex = random.randint(0, 4)
-        averageSpeedForLane = CAR_AVG_SPEED - laneIndex * PixelsConverter.convert_speed_to_pixels_per_frames(5)
+        averageSpeedForLane = CAR_AVG_SPEED - laneIndex * PixelsConverter.convert_speed_to_pixels_per_frames(3)
         speedCoefficient = normal(averageSpeedForLane, CAR_SPEED_STANDARD_DEVIATION)
         super().__init__(screen, location, speedCoefficient, roadIndex, directionIndex, laneIndex, driveAngle, image, weight=2, width=20, length=30, speed=speed)
     
@@ -482,6 +481,6 @@ class Car(Vehicle):
 class Truck(Vehicle):
     def __init__(self, screen, location : Vector2, roadIndex : int, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface, speed=60):
         weight = normal(20, 3)
-        averageSpeedForLane = TRUCK_AVG_SPEED - laneIndex * PixelsConverter.convert_speed_to_pixels_per_frames(5)
+        averageSpeedForLane = TRUCK_AVG_SPEED - laneIndex * PixelsConverter.convert_speed_to_pixels_per_frames(3)
         speedCoefficient = normal(averageSpeedForLane, TRUCK_SPEED_STANDARD_DEVIATION)
         super().__init__(screen, location, speedCoefficient, roadIndex, directionIndex, laneIndex, driveAngle, image, weight=weight, width=20, length=60, speed=speed)

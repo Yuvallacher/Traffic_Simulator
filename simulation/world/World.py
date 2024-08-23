@@ -10,7 +10,7 @@ class World:
     LANE_SIZE = 20
     NUMBER_OF_LANES = 5
 
-    MAX_SPEED = 60
+    MAX_SPEED = 50
     FREQUENCY = 10
     POLITENESS = 8
     AWARENESS = 1
@@ -24,6 +24,7 @@ class World:
     GREY = (153, 163, 164)
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
+    GREEN = (119, 189, 40)
     
     def __init__(self, roads : list[Road]):
         self.roads = roads
