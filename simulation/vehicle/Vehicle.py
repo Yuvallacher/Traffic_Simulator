@@ -70,6 +70,7 @@ class Vehicle:
         self.mask = mask.from_surface(self.originalImage) 
         self.update_vehicle_edges_and_corners()
         self.screen = screen
+     
 
         
     def update_vehicle_edges_and_corners(self):
@@ -98,8 +99,8 @@ class Vehicle:
         allHazards = self.get_all_harazds_around_vehicle(allVehicles, road, dataManager, accidentManager)
         if not self.inAccident:
             self.make_next_desicion(road, world, allHazards, dataManager)
-        
     
+        
     def make_next_desicion(self, road : Road, world : World, allHazards : dict, dataManager : DataManager):
         """
         compute and execute the next decision based on the surroindings
@@ -322,7 +323,7 @@ class Vehicle:
         
         for otherVehicle in allVehicles:
             if self != otherVehicle:
-                if self.check_collision(otherVehicle):    
+                if self.check_collision(otherVehicle): 
                     if not (self.inAccident and otherVehicle.inAccident):
                         self.handle_accident(otherVehicle, dataManager, accidentManager)
                     return surroundings
@@ -363,10 +364,10 @@ class Vehicle:
         
         dataManager.log_accident(type(self).__name__, type(otherVehicle).__name__, PixelsConverter.convert_pixels_per_frames_to_speed(self.speed), PixelsConverter.convert_pixels_per_frames_to_speed(otherVehicle.speed), self.accident.id)
         self.inAccident = True
-        self.speed = 0
+        # self.speed = 0
         self.desiredSpeed = 0
         otherVehicle.inAccident = True
-        otherVehicle.speed = 0
+        # otherVehicle.speed = 0
         otherVehicle.desiredSpeed = 0
 
     #TODO move to calculations ?
