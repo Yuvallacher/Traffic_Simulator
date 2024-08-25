@@ -6,14 +6,14 @@ import random
 
 class VehicleDrawer:
 
-    red_car_image = pygame.transform.scale(pygame.image.load('carPictures\\redCar.png'), (25, 15))
-    purple_car_image = pygame.transform.scale(pygame.image.load('carPictures\\purpleCar.png'), (25, 15))
-    yellow_car_image = pygame.transform.scale(pygame.image.load('carPictures\\yellowCar.png'), (25, 15))
-    blue_car_image = pygame.transform.scale(pygame.image.load('carPictures\\blueCar.svg'), (25, 15))
-    black_car_image = pygame.transform.scale(pygame.image.load('carPictures\\blackCar.jpg'), (25, 15))
+    red_car_image = pygame.transform.scale(pygame.image.load('pictures\\carPictures\\redCar.png'), (25, 15))
+    purple_car_image = pygame.transform.scale(pygame.image.load('pictures\\carPictures\\purpleCar.png'), (25, 15))
+    yellow_car_image = pygame.transform.scale(pygame.image.load('pictures\\carPictures\\yellowCar.png'), (25, 15))
+    blue_car_image = pygame.transform.scale(pygame.image.load('pictures\\carPictures\\blueCar.svg'), (25, 15))
+    black_car_image = pygame.transform.scale(pygame.image.load('pictures\\carPictures\\blackCar.jpg'), (25, 15))
     carPictures = [red_car_image, purple_car_image, yellow_car_image, blue_car_image, black_car_image]
 
-    red_truck_image = pygame.transform.scale(pygame.image.load('carPictures\\redTruck.png'), (60, 17))
+    red_truck_image = pygame.transform.scale(pygame.image.load('pictures\\carPictures\\redTruck.png'), (60, 17))
 
     @staticmethod
     def get_car_image() -> Surface:

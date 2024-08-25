@@ -1,7 +1,5 @@
 import time
 
-
-
 class Accident:
     def __init__(self, accidentID : int):
         self.id = accidentID

@@ -1,6 +1,6 @@
 {
     "straight_road": {
-            "images_path": [ "roadPictures\\straightRoadPictures\\straightRoad1.png", "roadPictures\\straightRoadPictures\\straightRoad2.png" ],
+            "images_path": [ "pictures\\roadPictures\\straightRoadPictures\\straightRoad1.png", "pictures\\roadPictures\\straightRoadPictures\\straightRoad2.png" ],
             "images_scales": [
                                 [1280, 80], [1280, 150]
                              ],
@@ -16,7 +16,7 @@
     },
 
     "junction_road": {
-        "images_path":["roadPictures\\junctionRoad.png"],
+        "images_path":["pictures\\roadPictures\\junctionRoad.jpg"],
         "images_scales":[ 
                             [1280, 714]
                         ],

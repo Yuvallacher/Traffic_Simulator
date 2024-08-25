@@ -1,9 +1,9 @@
+from calculations.pixels_calculations import PixelsConverter
 from datetime import datetime
 import threading
 import time
 import pandas as pd
 pd.set_option('display.precision', 2)
-from calculations.pixels_calculations import PixelsConverter
 
 class DataManager:
     def __init__(self, filename='simulation_data.xlsx', export_interval=2):

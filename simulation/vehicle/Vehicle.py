@@ -2,7 +2,7 @@ from calculations.pixels_calculations import PixelsConverter
 from simulation.data.DataManager import DataManager
 from simulation.data.Accident import Accident
 from simulation.data.Accident import AccidentManager
-from calculations.polygon_calculations import QuadCalculation
+from simulation.world.hazard import Hazard
 from simulation.world.World import World
 from simulation.world.World import Road
 from numpy.random import normal
@@ -95,7 +95,7 @@ class Vehicle:
         """
         scan the surroundings, compute the next decision and execute it
         """
-        allHazards = self.get_all_harazds_around_vehicle(allVehicles, road, dataManager, accidentManager)
+        allHazards = self.get_all_harazds_around_vehicle(allVehicles, road, dataManager, accidentManager, world.hazards)
         if not self.inAccident:
             self.make_next_desicion(road, world, allHazards, dataManager)
     
@@ -299,7 +299,7 @@ class Vehicle:
             return self.create_fov_boundary(direction, angle1, angle2, 200)
     
     
-    def get_all_harazds_around_vehicle(self, allVehicles : list['Vehicle'], road : Road, dataManager : DataManager, accidentManager : AccidentManager) -> dict:
+    def get_all_harazds_around_vehicle(self, allVehicles : list['Vehicle'], road : Road, dataManager : DataManager, accidentManager : AccidentManager, hazards : list[Hazard]) -> dict:
         """
         The vehicle scans its sorroundings for hazards, oncoming traffic, and other variables that can influence the driver's decision
         """
@@ -333,7 +333,7 @@ class Vehicle:
                     surroundings['vehicles_left'].append(otherVehicle)
                 if self.is_object_in_fov(otherVehicle.corners, rightSideFov[0], rightSideFov[1], 200):
                     surroundings['vehicles_right'].append(otherVehicle)
-                
+            
         # drawings of fovs - DELETE LATER
         # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + frontFov[0]), 1)
         # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + frontFov[1]), 1)
@@ -442,7 +442,7 @@ class Vehicle:
         else:
             distanceToVehicleAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
             speedDifferenceToVehicleAhead = self.speed - vehicleAhead.speed
-            reactionTime = 0.38
+            reactionTime = 0.38 * self.awareness
             comfortableDeceleration = 3
             delta = 4
 
