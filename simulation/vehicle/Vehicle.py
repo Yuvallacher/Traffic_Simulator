@@ -95,7 +95,7 @@ class Vehicle:
         """
         scan the surroundings, compute the next decision and execute it
         """
-        allHazards = self.get_all_harazds_around_vehicle(allVehicles, road, dataManager, accidentManager, world.hazards)
+        allHazards = self.get_all_hazards_around_vehicle(allVehicles, road, dataManager, accidentManager, world.hazards)
         if not self.inAccident:
             self.make_next_desicion(road, world, allHazards, dataManager)
     
@@ -104,7 +104,7 @@ class Vehicle:
         """
         compute and execute the next decision based on the surroindings
         """
-        self.accelerateAndBreak(allHazards['vehicle_ahead'], allHazards['hazard_ahead'], world.POLITENESS)
+        self.accelerateAndBreak(allHazards['vehicle_ahead'], allHazards['hazards_ahead'], world.POLITENESS)
         
         if not self.inJunction:
             if self.finishedSwitchingLane:
@@ -299,7 +299,7 @@ class Vehicle:
             return self.create_fov_boundary(direction, angle1, angle2, 200)
     
     
-    def get_all_harazds_around_vehicle(self, allVehicles : list['Vehicle'], road : Road, dataManager : DataManager, accidentManager : AccidentManager, hazards : list[Hazard]) -> dict:
+    def get_all_hazards_around_vehicle(self, allVehicles : list['Vehicle'], road : Road, dataManager : DataManager, accidentManager : AccidentManager, hazards : list[Hazard]) -> dict:
         """
         The vehicle scans its sorroundings for hazards, oncoming traffic, and other variables that can influence the driver's decision
         """
@@ -308,7 +308,7 @@ class Vehicle:
         surroundings['vehicles_left'] = []
         surroundings['vehicles_right'] = []
         surroundings['vehicle_ahead'] = None
-        surroundings['hazard_ahead'] = None
+        surroundings['hazards_ahead'] = []
         
         targetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex)
         if self.targetPositionIndex <= 1 or targetPosition == self.location:
@@ -343,7 +343,13 @@ class Vehicle:
         
         # line(self.screen, (0, 255, 0), self.leftEdgeOfVehicle, (self.leftEdgeOfVehicle + leftSideFov[0]), 1)
         # line(self.screen, (0, 255, 0), self.leftEdgeOfVehicle, (self.leftEdgeOfVehicle + leftSideFov[1]), 1)
-                
+        for hazard in hazards:
+            locationList = []
+            locationList.append(hazard.location)
+            if self.is_object_in_fov(locationList, frontFov[0], frontFov[1], 200):
+                if self.roadIndex == hazard.roadIndex and self.directionIndex == hazard.directionIndex:
+                    surroundings['hazards_ahead'].append(hazard)       
+
         surroundings['vehicle_ahead'] = self.get_closest_vehicle(surroundings['vehicles_front'], self.desiredLaneIndex, 'front', checkAllLanes=True)
         return surroundings
 
@@ -423,16 +429,18 @@ class Vehicle:
             return currentVehicleInDirection
     
     
-    def accelerateAndBreak(self, vehicleAhead: 'Vehicle', hazaradAhead : any, politeness: int):
+    def accelerateAndBreak(self, vehicleAhead: 'Vehicle', hazardsAhead : list[Hazard], politeness: int):
         """
         Calculates and updates a vehicle's speed according to the road's conditions - other vehicles, hazards, etc.
         """
-        minimalDistance = 10 + politeness * 3
+
+        minimalDistance = 10 + politeness * 3 
         
         maxAcceleration = 2  
         accelerationFactor = maxAcceleration / self.weight
         
         clearSpaceAhead = (vehicleAhead is None)
+    
         if clearSpaceAhead:
             accelerationSpeed = PixelsConverter.convert_speed_to_pixels_per_frames(accelerationFactor)
             if self.speed + accelerationSpeed <= self.desiredSpeed:
@@ -440,25 +448,29 @@ class Vehicle:
             else:
                 self.speed = self.desiredSpeed
         else:
-            distanceToVehicleAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
-            speedDifferenceToVehicleAhead = self.speed - vehicleAhead.speed
-            reactionTime = 0.38 * self.awareness
-            comfortableDeceleration = 3
-            delta = 4
+                distanceToVehicleAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
+                speedDifferenceToVehicleAhead = self.speed - vehicleAhead.speed
+                reactionTime = 0.38 * self.awareness
+                comfortableDeceleration = 3 
+                delta = 4
 
-            safeStoppingDistance = minimalDistance + self.speed * reactionTime + (self.speed * speedDifferenceToVehicleAhead) / (2 * (maxAcceleration * comfortableDeceleration)**0.5)
-        
-            if distanceToVehicleAhead > safeStoppingDistance: 
-                acceleration = maxAcceleration * (1 - (self.speed / self.desiredSpeed)**delta - (safeStoppingDistance / distanceToVehicleAhead)**2)
-            else:
-                acceleration = -comfortableDeceleration
-                if distanceToVehicleAhead < 0.65 * safeStoppingDistance:
-                    acceleration -= 0.5 * comfortableDeceleration
-
-            self.speed += acceleration * 0.0167
+                safeStoppingDistance = minimalDistance + self.speed * reactionTime + (self.speed * speedDifferenceToVehicleAhead) / (2 * (maxAcceleration * comfortableDeceleration)**0.5)
             
-            # Ensure speed is not negative
-            self.speed = max(self.speed, 0)
+                if distanceToVehicleAhead > safeStoppingDistance: 
+                    acceleration = maxAcceleration * (1 - (self.speed / self.desiredSpeed)**delta - (safeStoppingDistance / distanceToVehicleAhead)**2)
+                else:
+                    acceleration = -comfortableDeceleration
+                    if distanceToVehicleAhead < 0.65 * safeStoppingDistance:
+                        acceleration -= 0.5 * comfortableDeceleration
+
+                self.speed += acceleration * 0.0167
+                
+                # Ensure speed is not negative
+                self.speed = max(self.speed, 0)
+          
+
+    
+
 
 
 

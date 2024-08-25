@@ -2,12 +2,13 @@ from pygame.surface import Surface
 from pygame.math import Vector2
 
 class Hazard:
-    def __init__(self, type : str, location : Vector2, roadIndex : int, directionIndex : int, images : list[Surface], attributes : dict):
+    def __init__(self, type : str, location : Vector2, roadIndex : int, directionIndex : int, images : list[Surface], attributes : dict, priority : int):
         self.type = type
         self.location = location
         self.roadIndex = roadIndex
         self.directionIndex = directionIndex
         self.images = images
         self.attributes = attributes
+        self.priority = priority
         
     
