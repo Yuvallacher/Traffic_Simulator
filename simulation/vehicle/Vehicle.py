@@ -346,7 +346,7 @@ class Vehicle:
         for hazard in hazards:
             locationList = []
             locationList.append(hazard.location)
-            if self.is_object_in_fov(locationList, frontFov[0], frontFov[1], 200):
+            if self.is_object_in_fov(locationList, frontFov[0], frontFov[1], 150):
                 if self.roadIndex == hazard.roadIndex and self.directionIndex == hazard.directionIndex:
                     surroundings['hazards_ahead'].append(hazard)       
 
@@ -436,44 +436,94 @@ class Vehicle:
 
         minimalDistance = 10 + politeness * 3 
         
+        comfortableDeceleration = 3 
         maxAcceleration = 2  
         accelerationFactor = maxAcceleration / self.weight
         
-        clearSpaceAhead = (vehicleAhead is None)
+        noVehicleAhead = vehicleAhead is None
+        noHazardAhead = len(hazardsAhead) == 0
+        clearSpaceAhead = noVehicleAhead and noHazardAhead
+        if not noHazardAhead:
+            closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
+            if closestHazard.priority == 1:
+                clearSpaceAhead = noVehicleAhead
+            if closestHazard.type == "speedLimit":
+                if distanceToHazardAhead <= 50:
+                    self.set_desired_speed(closestHazard.attributes["limit"])
     
         if clearSpaceAhead:
             accelerationSpeed = PixelsConverter.convert_speed_to_pixels_per_frames(accelerationFactor)
-            if self.speed + accelerationSpeed <= self.desiredSpeed:
+            if self.speed > self.desiredSpeed:
+                self.speed += -comfortableDeceleration * 0.0167
+            elif self.speed + accelerationSpeed <= self.desiredSpeed:
                 self.speed += accelerationSpeed
             else:
                 self.speed = self.desiredSpeed
         else:
+            if not noVehicleAhead and not noHazardAhead:
+                if self.roadIndex == 2 and self.directionIndex == 0:
+                    x = 10
                 distanceToVehicleAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
-                speedDifferenceToVehicleAhead = self.speed - vehicleAhead.speed
-                reactionTime = 0.38 * self.awareness
-                comfortableDeceleration = 3 
-                delta = 4
-
-                safeStoppingDistance = minimalDistance + self.speed * reactionTime + (self.speed * speedDifferenceToVehicleAhead) / (2 * (maxAcceleration * comfortableDeceleration)**0.5)
-            
-                if distanceToVehicleAhead > safeStoppingDistance: 
-                    acceleration = maxAcceleration * (1 - (self.speed / self.desiredSpeed)**delta - (safeStoppingDistance / distanceToVehicleAhead)**2)
+                closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
+                distanceToObjectAhead = min(distanceToVehicleAhead, distanceToHazardAhead)
+                if distanceToObjectAhead == distanceToHazardAhead:
+                    speedDifferenceToObjectAhead = self.speed
                 else:
-                    acceleration = -comfortableDeceleration
-                    if distanceToVehicleAhead < 0.65 * safeStoppingDistance:
-                        acceleration -= 0.5 * comfortableDeceleration
+                    speedDifferenceToObjectAhead = self.speed - vehicleAhead.speed
+            elif not noVehicleAhead:
+                distanceToObjectAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
+                speedDifferenceToObjectAhead = self.speed - vehicleAhead.speed
+            elif not noHazardAhead:
+                if self.roadIndex == 2 and self.directionIndex == 0:
+                    x = 10
+                closestHazard, distanceToObjectAhead = self.get_closest_high_priority_hazard(hazardsAhead)
+                speedDifferenceToObjectAhead = self.speed
+            
+            
+            reactionTime = 0.38 * self.awareness
+            delta = 4
 
-                self.speed += acceleration * 0.0167
-                
-                # Ensure speed is not negative
-                self.speed = max(self.speed, 0)
+            safeStoppingDistance = minimalDistance + self.speed * reactionTime + (self.speed * speedDifferenceToObjectAhead) / (2 * (maxAcceleration * comfortableDeceleration)**0.5)
+        
+            if distanceToObjectAhead > safeStoppingDistance: 
+                acceleration = maxAcceleration * (1 - (self.speed / self.desiredSpeed)**delta - (safeStoppingDistance / distanceToObjectAhead)**2)
+            else:
+                acceleration = -comfortableDeceleration
+                if distanceToObjectAhead < 0.65 * safeStoppingDistance:
+                    acceleration -= 0.5 * comfortableDeceleration
+
+            self.speed += acceleration * 0.0167
+            
+            # Ensure speed is not negative
+            self.speed = max(self.speed, 0)
           
 
     
+    def get_closest_high_priority_hazard(self, hazards : list[Hazard]) -> list[Hazard, float]:
+        firstIteration = True
+        for hazard in hazards:
+            if firstIteration:
+                firstIteration = False
+                closestHazard = hazard
+                distanceToClosestHazard = self.get_minimal_distance_to_corner_of_hazard(hazard)
+            else:
+                minimalDistanceToCurrentHazard = self.get_minimal_distance_to_corner_of_hazard(hazard)
+                if (hazard.priority >= closestHazard.priority) and (minimalDistanceToCurrentHazard < distanceToClosestHazard):
+                    closestHazard = hazard
+                    distanceToClosestHazard = minimalDistanceToCurrentHazard
+        return hazard, distanceToClosestHazard
 
 
-
-
+    def get_minimal_distance_to_corner_of_hazard(self, hazard : Hazard):
+        rect = hazard.images[0].get_rect(topleft=(hazard.location.x, hazard.location.y))
+        hazardCorners = [
+            (rect.left, rect.top),     # Top-left corner
+            (rect.right, rect.top),    # Top-right corner
+            (rect.left, rect.bottom),  # Bottom-left corner
+            (rect.right, rect.bottom)  # Bottom-right corner
+        ]
+        distanceToClosestHazard = min([self.frontEdgeOfVehicle.distance_to(corner) for corner in hazardCorners])
+        return distanceToClosestHazard
 
 
 #---------------------Car---------------------#
