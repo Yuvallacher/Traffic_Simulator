@@ -104,7 +104,7 @@ class Vehicle:
         """
         compute and execute the next decision based on the surroindings
         """
-        self.accelerateAndBreak(allHazards['vehicle_ahead'], allHazards['hazards_ahead'], world.POLITENESS)
+        self.accelerate_and_break(allHazards['vehicle_ahead'], allHazards['hazards_ahead'], world.POLITENESS)
         
         if not self.inJunction:
             if self.finishedSwitchingLane:
@@ -176,7 +176,7 @@ class Vehicle:
 
     def switching_lane_decision_adjacent_lane(self, vehicleAhead : 'Vehicle', vehiclesInFront : list['Vehicle'], targetLaneIndex : int) -> bool: #TODO Change function name
         shouldSwitchLane = False
-        closestFrontVehicleOnAdjacentLane = self.get_closest_vehicle(vehiclesInFront, targetLaneIndex, "front", checkAllLanes=False)
+        closestFrontVehicleOnAdjacentLane = self.get_closest_vehicle_on_same_road(vehiclesInFront, targetLaneIndex, "front", checkAllLanes=False)
         if closestFrontVehicleOnAdjacentLane is not None:
             distance = self.frontEdgeOfVehicle.distance_to(closestFrontVehicleOnAdjacentLane.backEdgeOfVehicle)
             otherLaneVehicleSpeed = PixelsConverter.convert_pixels_per_frames_to_speed(closestFrontVehicleOnAdjacentLane.speed)
@@ -226,7 +226,7 @@ class Vehicle:
     def check_for_space_in_target_lane(self, vehiclesOnSide : list['Vehicle'], vehicleAhead : 'Vehicle', targetLaneIndex : int, isLeftDirection : bool):
         switchLane = False
         direction = 'left' if isLeftDirection else 'right'
-        closestVehicleToSide = self.get_closest_vehicle(vehiclesOnSide, targetLaneIndex, direction, checkAllLanes=True)
+        closestVehicleToSide = self.get_closest_vehicle_on_same_road(vehiclesOnSide, targetLaneIndex, direction, checkAllLanes=True)
         distanceToVehicleInFront = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
         
         if closestVehicleToSide is None:          
@@ -335,8 +335,8 @@ class Vehicle:
                     surroundings['vehicles_right'].append(otherVehicle)
             
         # drawings of fovs - DELETE LATER
-        # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + frontFov[0]), 1)
-        # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + frontFov[1]), 1)
+        line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + frontFov[0]), 1)
+        line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + frontFov[1]), 1)
         
         # line(self.screen, (0, 0, 255), self.rightEdgeOfVehicle, (self.rightEdgeOfVehicle + rightSideFov[0]), 1)
         # line(self.screen, (0, 0, 255), self.rightEdgeOfVehicle, (self.rightEdgeOfVehicle + rightSideFov[1]), 1)
@@ -344,13 +344,18 @@ class Vehicle:
         # line(self.screen, (0, 255, 0), self.leftEdgeOfVehicle, (self.leftEdgeOfVehicle + leftSideFov[0]), 1)
         # line(self.screen, (0, 255, 0), self.leftEdgeOfVehicle, (self.leftEdgeOfVehicle + leftSideFov[1]), 1)
         for hazard in hazards:
-            locationList = []
-            locationList.append(hazard.location)
-            if self.is_object_in_fov(locationList, frontFov[0], frontFov[1], 150):
+            rect = hazard.images[0].get_rect(topleft=(hazard.location.x, hazard.location.y))
+            hazardCorners = [
+                (rect.left, rect.top),     # Top-left corner
+                (rect.right, rect.top),    # Top-right corner
+                (rect.left, rect.bottom),  # Bottom-left corner
+                (rect.right, rect.bottom)  # Bottom-right corner
+            ]
+            if self.is_object_in_fov(hazardCorners, frontFov[0], frontFov[1], 150):
                 if self.roadIndex == hazard.roadIndex and self.directionIndex == hazard.directionIndex:
                     surroundings['hazards_ahead'].append(hazard)       
 
-        surroundings['vehicle_ahead'] = self.get_closest_vehicle(surroundings['vehicles_front'], self.desiredLaneIndex, 'front', checkAllLanes=True)
+        surroundings['vehicle_ahead'] = self.get_closest_vehicle_on_same_road(surroundings['vehicles_front'], self.desiredLaneIndex, 'front', checkAllLanes=True)
         return surroundings
 
     def handle_accident(self, otherVehicle : 'Vehicle', dataManager : DataManager, accidentManager : AccidentManager):
@@ -392,18 +397,18 @@ class Vehicle:
         return False
 
 
-    def get_closest_vehicle(self, allVehiclesInDirection: list['Vehicle'], targetLaneIndex: int, direction: str, checkAllLanes: bool = True) -> 'Vehicle':
+    def get_closest_vehicle_on_same_road(self, allVehiclesInFovDirection: list['Vehicle'], targetLaneIndex: int, direction: str, checkAllLanes: bool = True) -> 'Vehicle':
         """
         If checkAllLanes == True - returns the closest vehicle on current AND target lanes. 
         Else - returns the closest vehicle on the target lane ONLY
         """
-        if len(allVehiclesInDirection) == 0:
+        if len(allVehiclesInFovDirection) == 0:
             return None
         else:
             currentVehicleInDirection = None
             minDistance = 0
             first = True
-            for vehicle in allVehiclesInDirection:
+            for vehicle in allVehiclesInFovDirection:
                 if direction == 'front':
                     edge = self.frontEdgeOfVehicle
                     otherVehicleEdge = vehicle.backEdgeOfVehicle
@@ -414,7 +419,7 @@ class Vehicle:
                     edge = self.rightEdgeOfVehicle
                     otherVehicleEdge = vehicle.leftEdgeOfVehicle
 
-                if self.directionIndex == vehicle.directionIndex:
+                if self.roadIndex == vehicle.roadIndex and self.directionIndex == vehicle.directionIndex:
                     if (checkAllLanes and (self.currentLaneIndex == vehicle.currentLaneIndex or self.currentLaneIndex == vehicle.desiredLaneIndex or targetLaneIndex == vehicle.currentLaneIndex or targetLaneIndex == vehicle.desiredLaneIndex)) or \
                     (not checkAllLanes and targetLaneIndex == vehicle.currentLaneIndex):
                         distance = edge.distance_to(otherVehicleEdge)
@@ -429,11 +434,10 @@ class Vehicle:
             return currentVehicleInDirection
     
     
-    def accelerateAndBreak(self, vehicleAhead: 'Vehicle', hazardsAhead : list[Hazard], politeness: int):
+    def accelerate_and_break(self, vehicleAhead: 'Vehicle', hazardsAhead : list[Hazard], politeness: int):
         """
         Calculates and updates a vehicle's speed according to the road's conditions - other vehicles, hazards, etc.
         """
-
         minimalDistance = 10 + politeness * 3 
         
         comfortableDeceleration = 3 
@@ -447,11 +451,11 @@ class Vehicle:
             closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
             if closestHazard.priority == 1:
                 clearSpaceAhead = noVehicleAhead
-            if closestHazard.type == "speedLimit":
-                if distanceToHazardAhead <= 50:
-                    self.set_desired_speed(closestHazard.attributes["limit"])
-    
-        if clearSpaceAhead:
+                if closestHazard.type == "speedLimit":
+                    if distanceToHazardAhead <= 50:
+                        self.set_desired_speed(closestHazard.attributes["limit"])
+ 
+        if clearSpaceAhead: # Open road - no hazards and no vehicles ahead
             accelerationSpeed = PixelsConverter.convert_speed_to_pixels_per_frames(accelerationFactor)
             if self.speed > self.desiredSpeed:
                 self.speed += -comfortableDeceleration * 0.0167
@@ -461,22 +465,27 @@ class Vehicle:
                 self.speed = self.desiredSpeed
         else:
             if not noVehicleAhead and not noHazardAhead:
-                if self.roadIndex == 2 and self.directionIndex == 0:
-                    x = 10
                 distanceToVehicleAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
                 closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
                 distanceToObjectAhead = min(distanceToVehicleAhead, distanceToHazardAhead)
                 if distanceToObjectAhead == distanceToHazardAhead:
-                    speedDifferenceToObjectAhead = self.speed
+                    speedDifferenceToObjectAhead =  self.speed
+                #     if closestHazard.type == "stopSign":
+                #         deceleration = self.calculate_deceleration(distanceToObjectAhead, self.speed)
+                #         self.speed += deceleration
+                #         return     
                 else:
                     speedDifferenceToObjectAhead = self.speed - vehicleAhead.speed
             elif not noVehicleAhead:
                 distanceToObjectAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
                 speedDifferenceToObjectAhead = self.speed - vehicleAhead.speed
             elif not noHazardAhead:
-                if self.roadIndex == 2 and self.directionIndex == 0:
-                    x = 10
                 closestHazard, distanceToObjectAhead = self.get_closest_high_priority_hazard(hazardsAhead)
+                if closestHazard.type == "stopSign":
+                    distanceToStopSign = self.frontEdgeOfVehicle.distance_to(closestHazard.location)
+                    deceleration = self.calculate_deceleration(distanceToStopSign, self.speed)
+                    self.speed += deceleration
+                    return      
                 speedDifferenceToObjectAhead = self.speed
             
             
@@ -497,7 +506,11 @@ class Vehicle:
             # Ensure speed is not negative
             self.speed = max(self.speed, 0)
           
-
+    def calculate_deceleration(self, distance, speed):
+        if distance == 0:
+            return float('inf')  # Prevent division by zero
+        deceleration = -(speed ** 2) / (2 * distance)
+        return deceleration
     
     def get_closest_high_priority_hazard(self, hazards : list[Hazard]) -> list[Hazard, float]:
         firstIteration = True
@@ -508,7 +521,7 @@ class Vehicle:
                 distanceToClosestHazard = self.get_minimal_distance_to_corner_of_hazard(hazard)
             else:
                 minimalDistanceToCurrentHazard = self.get_minimal_distance_to_corner_of_hazard(hazard)
-                if (hazard.priority >= closestHazard.priority) and (minimalDistanceToCurrentHazard < distanceToClosestHazard):
+                if (hazard.priority > closestHazard.priority) or ((hazard.priority == closestHazard.priority) and (minimalDistanceToCurrentHazard < distanceToClosestHazard)):
                     closestHazard = hazard
                     distanceToClosestHazard = minimalDistanceToCurrentHazard
         return hazard, distanceToClosestHazard
@@ -525,6 +538,7 @@ class Vehicle:
         distanceToClosestHazard = min([self.frontEdgeOfVehicle.distance_to(corner) for corner in hazardCorners])
         return distanceToClosestHazard
 
+    # def get_vehicle_state(self, )
 
 #---------------------Car---------------------#
 class Car(Vehicle):

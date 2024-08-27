@@ -36,7 +36,7 @@ class World:
         self.hazards : list[Hazard] = []
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
-        self.accidentManager =  AccidentManager()
+        self.accidentManager = AccidentManager()
 
     def set_vehicles_manager(self, vehiclesManager):
         self.vehiclesManager = vehiclesManager

@@ -11,6 +11,7 @@ simulationWorld = World("junction", 1)
 simulationWorld.set_vehicles_manager(VehiclesManager(simulationWorld.NUMBER_OF_CARS))
 dataManager = DataManager(filename='simulation_data.xlsx', export_interval=2)
 next_stat_update = pygame.time.get_ticks() + dataManager.export_interval * 1000
+
 speedLimit = Hazard("speedLimit", Vector2([185, 405]), 1, 0, [pygame.transform.scale(pygame.image.load("pictures\\hazardsPictures\\speed_limit.png").convert(), (30,70))], {"limit": 30}, 1)
 stopSign = Hazard("stopSign", Vector2([700, 510]), 2, 0, [pygame.transform.scale(pygame.image.load("pictures\\hazardsPictures\\stop.jpg").convert(), (30,70))], {}, 2)
 simulationWorld.add_hazard(speedLimit)
