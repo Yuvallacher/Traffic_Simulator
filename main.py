@@ -2,6 +2,8 @@ from simulation.vehicle.vehicles_manager import VehiclesManager
 from simulation.data.DataManager import DataManager
 from drawings.vehicle_drawer import VehicleDrawer
 from simulation.world.hazard import Hazard
+from simulation.world.hazard import SpeedLimit
+from simulation.world.hazard import StopSign
 from simulation.world.World import World
 from pygame.math import Vector2
 import pygame
@@ -12,8 +14,8 @@ simulationWorld.set_vehicles_manager(VehiclesManager(simulationWorld.NUMBER_OF_C
 dataManager = DataManager(filename='simulation_data.xlsx', export_interval=2)
 next_stat_update = pygame.time.get_ticks() + dataManager.export_interval * 1000
 
-speedLimit = Hazard("speedLimit", Vector2([185, 405]), 1, 0, [pygame.transform.scale(pygame.image.load("pictures\\hazardsPictures\\speed_limit.png").convert(), (30,70))], {"limit": 30}, 1)
-stopSign = Hazard("stopSign", Vector2([700, 510]), 2, 0, [pygame.transform.scale(pygame.image.load("pictures\\hazardsPictures\\stop.jpg").convert(), (30,70))], {}, 2)
+speedLimit = SpeedLimit(Vector2([185, 405]), 1, 0, [pygame.transform.scale(pygame.image.load("pictures\\hazardsPictures\\speed_limit.png").convert(), (30,70))], 30)
+stopSign = StopSign(Vector2([700, 510]), 2, 0, [pygame.transform.scale(pygame.image.load("pictures\\hazardsPictures\\stop.jpg").convert(), (30,70))])
 simulationWorld.add_hazard(speedLimit)
 simulationWorld.add_hazard(stopSign)
 

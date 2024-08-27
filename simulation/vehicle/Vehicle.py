@@ -52,6 +52,7 @@ class Vehicle:
         self.shouldSwitchLane = False
         self.activelySwitchingLane = False
         self.finishedSwitchingLane = False
+        self.encounteredHazards : dict[int, bool] = {}
         self.driveAngle = driveAngle
         self.frontEdgeOfVehicle : Vector2
         self.backEdgeOfVehicle : Vector2
@@ -104,7 +105,9 @@ class Vehicle:
         """
         compute and execute the next decision based on the surroindings
         """
-        self.accelerate_and_break(allHazards['vehicle_ahead'], allHazards['hazards_ahead'], world.POLITENESS)
+        acceleration = self.calculate_acceleration(allHazards, world.POLITENESS)
+        self.accelerate_and_break(acceleration)
+        # self.accelerate_and_break(allHazards['vehicle_ahead'], allHazards['hazards_ahead'], world.POLITENESS)
         
         if not self.inJunction:
             if self.finishedSwitchingLane:
@@ -136,8 +139,92 @@ class Vehicle:
         
         self.update_vehicle_location(nextTargetPosition, self.speed) 
         
-       
-   
+    
+    def get_clear_road_status(self, vehicleAhead : 'Vehicle', hazardsAhead : list[Hazard]) -> list[bool, bool]:
+        return vehicleAhead is not None, len(hazardsAhead) != 0
+    
+    
+    def calculate_acceleration(self, allHazards : dict, politeness : int) -> float:
+        isVehicleAhead, isHazardAhead = self.get_clear_road_status(allHazards['vehicle_ahead'], allHazards['hazards_ahead'])
+        if not isVehicleAhead and not isHazardAhead:
+            acceleration = self.acceleration_for_clear_road()
+        elif isVehicleAhead and not isHazardAhead:
+            acceleration = self.acceleration_for_only_vehicle_ahead(allHazards['vehicle_ahead'], politeness)
+        elif not isVehicleAhead and isHazardAhead:
+            acceleration = self.acceleration_for_only_hazard_ahead(allHazards['hazards_ahead'])
+        else: # isVehicleAhead and isHazardAhead
+            acceleration = self.acceleration_for_vehicle_and_hazard(allHazards['vehicle_ahead'], allHazards['hazards_ahead'], politeness)
+        return acceleration
+    
+    
+    def acceleration_for_clear_road(self) -> float:
+        comfortableDeceleration = 3
+        maxAcceleration = 2  
+        accelerationFactor = maxAcceleration / self.weight
+        
+        accelerationSpeed = PixelsConverter.convert_speed_to_pixels_per_frames(accelerationFactor)
+        if self.speed > self.desiredSpeed:
+            return -comfortableDeceleration * 0.0167
+        elif self.speed + accelerationSpeed <= self.desiredSpeed:
+            return accelerationSpeed 
+        else:
+            return (self.desiredSpeed - self.speed) 
+    
+
+    def acceleration_for_only_vehicle_ahead(self, vehicleAhead : 'Vehicle', politeness : int) -> float:
+        minimalDistance = 10 + politeness * 3
+        comfortableDeceleration = 3 
+        maxAcceleration = 2  
+        reactionTime = 0.38 * self.awareness
+        delta = 4
+
+        distanceToVehicleAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
+        speedDifferenceToVehicleAhead = self.speed - vehicleAhead.speed
+                
+        safeStoppingDistance = minimalDistance + self.speed * reactionTime + (self.speed * speedDifferenceToVehicleAhead) / (2 * (maxAcceleration * comfortableDeceleration)**0.5)
+    
+        if distanceToVehicleAhead > safeStoppingDistance:
+            acceleration = maxAcceleration * (1 - (self.speed / self.desiredSpeed)**delta - (safeStoppingDistance / distanceToVehicleAhead)**2)
+        else:
+            acceleration = -comfortableDeceleration
+            if distanceToVehicleAhead < 0.65 * safeStoppingDistance:
+                acceleration -= 0.5 * comfortableDeceleration
+
+        return acceleration
+        
+    
+    def acceleration_for_only_hazard_ahead(self, hazardsAhead : list[Hazard]) -> float:
+        closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
+        acceleration = closestHazard.affect_vehicle(self, distanceToHazardAhead)
+        if (closestHazard.type == 'speedLimit') or (closestHazard.type == 'trafficLight' and closestHazard.attributes["isGreenLight"]): #TODO think about yellow light
+            acceleration = self.acceleration_for_clear_road()
+        
+        hazardCompletionStatus = closestHazard.check_hazard_rule_completion(self, distanceToHazardAhead)
+        self.update_encountered_hazard_status(closestHazard.id, hazardCompletionStatus)
+        return acceleration
+    
+    
+    def acceleration_for_vehicle_and_hazard(self, vehicleAhead : 'Vehicle', hazardsAhead : list[Hazard], politeness : int) -> float:
+        closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
+        if closestHazard.priority == 1:
+            self.acceleration_for_only_hazard_ahead(hazardsAhead)
+            acceleration = self.acceleration_for_only_vehicle_ahead(vehicleAhead, politeness)
+        else:
+            distanceToVehicleAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
+            if distanceToHazardAhead < distanceToVehicleAhead:
+                acceleration = self.acceleration_for_only_hazard_ahead(hazardsAhead)
+            else:
+                acceleration = self.acceleration_for_only_vehicle_ahead(vehicleAhead, politeness)
+        return acceleration
+    
+    
+    def update_encountered_hazard_status(self, hazardID : int, hazardCompletionStatus : bool):
+        if hazardID not in self.encounteredHazards.keys():
+            self.encounteredHazards[hazardID] = True
+        else:
+            self.encounteredHazards[hazardID] = hazardCompletionStatus
+        
+    
     def draw_desired_junction_path(self, pathOptions : dict) -> list[str, str]:
         keys = list(pathOptions.keys())
         numberOfOptions = len(keys)
@@ -247,8 +334,6 @@ class Vehicle:
             self.activelySwitchingLane = True
             self.targetPositionIndex += int(self.speed) + 1
                         
-
-
     
     def update_vehicle_location(self, targetPos: Vector2, speed):
         direction = targetPos - self.location
@@ -353,7 +438,8 @@ class Vehicle:
             ]
             if self.is_object_in_fov(hazardCorners, frontFov[0], frontFov[1], 150):
                 if self.roadIndex == hazard.roadIndex and self.directionIndex == hazard.directionIndex:
-                    surroundings['hazards_ahead'].append(hazard)       
+                    if hazard.id not in self.encounteredHazards.keys() or self.encounteredHazards[hazard.id] == False:
+                        surroundings['hazards_ahead'].append(hazard)       
 
         surroundings['vehicle_ahead'] = self.get_closest_vehicle_on_same_road(surroundings['vehicles_front'], self.desiredLaneIndex, 'front', checkAllLanes=True)
         return surroundings
@@ -434,79 +520,85 @@ class Vehicle:
             return currentVehicleInDirection
     
     
-    def accelerate_and_break(self, vehicleAhead: 'Vehicle', hazardsAhead : list[Hazard], politeness: int):
-        """
-        Calculates and updates a vehicle's speed according to the road's conditions - other vehicles, hazards, etc.
-        """
-        minimalDistance = 10 + politeness * 3 
+    # def accelerate_and_break(self, vehicleAhead: 'Vehicle', hazardsAhead : list[Hazard], politeness: int):
+    #     """
+    #     Calculates and updates a vehicle's speed according to the road's conditions - other vehicles, hazards, etc.
+    #     """
+    #     minimalDistance = 10 + politeness * 3 
         
-        comfortableDeceleration = 3 
-        maxAcceleration = 2  
-        accelerationFactor = maxAcceleration / self.weight
+    #     comfortableDeceleration = 3 
+    #     maxAcceleration = 2  
+    #     accelerationFactor = maxAcceleration / self.weight
         
-        noVehicleAhead = vehicleAhead is None
-        noHazardAhead = len(hazardsAhead) == 0
-        clearSpaceAhead = noVehicleAhead and noHazardAhead
-        if not noHazardAhead:
-            closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
-            if closestHazard.priority == 1:
-                clearSpaceAhead = noVehicleAhead
-                if closestHazard.type == "speedLimit":
-                    if distanceToHazardAhead <= 50:
-                        self.set_desired_speed(closestHazard.attributes["limit"])
+    #     noVehicleAhead = vehicleAhead is None
+    #     noHazardAhead = len(hazardsAhead) == 0
+    #     clearSpaceAhead = noVehicleAhead and noHazardAhead
+    #     if not noHazardAhead:
+    #         closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
+    #         if closestHazard.priority == 1:
+    #             clearSpaceAhead = noVehicleAhead
+    #             if closestHazard.type == "speedLimit":
+    #                 if distanceToHazardAhead <= 50:
+    #                     self.set_desired_speed(closestHazard.attributes["limit"])
  
-        if clearSpaceAhead: # Open road - no hazards and no vehicles ahead
-            accelerationSpeed = PixelsConverter.convert_speed_to_pixels_per_frames(accelerationFactor)
-            if self.speed > self.desiredSpeed:
-                self.speed += -comfortableDeceleration * 0.0167
-            elif self.speed + accelerationSpeed <= self.desiredSpeed:
-                self.speed += accelerationSpeed
-            else:
-                self.speed = self.desiredSpeed
-        else:
-            if not noVehicleAhead and not noHazardAhead:
-                distanceToVehicleAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
-                closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
-                distanceToObjectAhead = min(distanceToVehicleAhead, distanceToHazardAhead)
-                if distanceToObjectAhead == distanceToHazardAhead:
-                    speedDifferenceToObjectAhead =  self.speed
-                #     if closestHazard.type == "stopSign":
-                #         deceleration = self.calculate_deceleration(distanceToObjectAhead, self.speed)
-                #         self.speed += deceleration
-                #         return     
-                else:
-                    speedDifferenceToObjectAhead = self.speed - vehicleAhead.speed
-            elif not noVehicleAhead:
-                distanceToObjectAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
-                speedDifferenceToObjectAhead = self.speed - vehicleAhead.speed
-            elif not noHazardAhead:
-                closestHazard, distanceToObjectAhead = self.get_closest_high_priority_hazard(hazardsAhead)
-                if closestHazard.type == "stopSign":
-                    distanceToStopSign = self.frontEdgeOfVehicle.distance_to(closestHazard.location)
-                    deceleration = self.calculate_deceleration(distanceToStopSign, self.speed)
-                    self.speed += deceleration
-                    return      
-                speedDifferenceToObjectAhead = self.speed
+    #     if clearSpaceAhead: # Open road - no hazards and no vehicles ahead
+    #         accelerationSpeed = PixelsConverter.convert_speed_to_pixels_per_frames(accelerationFactor)
+    #         if self.speed > self.desiredSpeed:
+    #             self.speed += -comfortableDeceleration * 0.0167
+    #         elif self.speed + accelerationSpeed <= self.desiredSpeed:
+    #             self.speed += accelerationSpeed
+    #         else:
+    #             self.speed = self.desiredSpeed
+    #     else:
+    #         if not noVehicleAhead and not noHazardAhead:
+    #             distanceToVehicleAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
+    #             closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
+    #             distanceToObjectAhead = min(distanceToVehicleAhead, distanceToHazardAhead)
+    #             if distanceToObjectAhead == distanceToHazardAhead:
+    #                 speedDifferenceToObjectAhead =  self.speed
+    #             #     if closestHazard.type == "stopSign":
+    #             #         deceleration = self.calculate_deceleration(distanceToObjectAhead, self.speed)
+    #             #         self.speed += deceleration
+    #             #         return     
+    #             else:
+    #                 speedDifferenceToObjectAhead = self.speed - vehicleAhead.speed
+    #         elif not noVehicleAhead:
+    #             distanceToObjectAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
+    #             speedDifferenceToObjectAhead = self.speed - vehicleAhead.speed
+    #         elif not noHazardAhead:
+    #             closestHazard, distanceToObjectAhead = self.get_closest_high_priority_hazard(hazardsAhead)
+    #             if closestHazard.type == "stopSign":
+    #                 distanceToStopSign = self.frontEdgeOfVehicle.distance_to(closestHazard.location)
+    #                 deceleration = self.calculate_deceleration(distanceToStopSign, self.speed)
+    #                 self.speed += deceleration
+    #                 return      
+    #             speedDifferenceToObjectAhead = self.speed
             
             
-            reactionTime = 0.38 * self.awareness
-            delta = 4
+    #         reactionTime = 0.38 * self.awareness
+    #         delta = 4
 
-            safeStoppingDistance = minimalDistance + self.speed * reactionTime + (self.speed * speedDifferenceToObjectAhead) / (2 * (maxAcceleration * comfortableDeceleration)**0.5)
+    #         safeStoppingDistance = minimalDistance + self.speed * reactionTime + (self.speed * speedDifferenceToObjectAhead) / (2 * (maxAcceleration * comfortableDeceleration)**0.5)
         
-            if distanceToObjectAhead > safeStoppingDistance: 
-                acceleration = maxAcceleration * (1 - (self.speed / self.desiredSpeed)**delta - (safeStoppingDistance / distanceToObjectAhead)**2)
-            else:
-                acceleration = -comfortableDeceleration
-                if distanceToObjectAhead < 0.65 * safeStoppingDistance:
-                    acceleration -= 0.5 * comfortableDeceleration
+    #         if distanceToObjectAhead > safeStoppingDistance: 
+    #             acceleration = maxAcceleration * (1 - (self.speed / self.desiredSpeed)**delta - (safeStoppingDistance / distanceToObjectAhead)**2)
+    #         else:
+    #             acceleration = -comfortableDeceleration
+    #             if distanceToObjectAhead < 0.65 * safeStoppingDistance:
+    #                 acceleration -= 0.5 * comfortableDeceleration
 
-            self.speed += acceleration * 0.0167
+    #         self.speed += acceleration
             
-            # Ensure speed is not negative
-            self.speed = max(self.speed, 0)
+    #         # Ensure speed is not negative
+    #         self.speed = max(self.speed, 0)
+    
+    
+    def accelerate_and_break(self, acceleration : float):
+        self.speed += acceleration
+        self.speed = max(self.speed, 0) # Ensure speed is not negative
+    
           
-    def calculate_deceleration(self, distance, speed):
+    def decelerate_to_stop(self, distance, speed) -> float:
         if distance == 0:
             return float('inf')  # Prevent division by zero
         deceleration = -(speed ** 2) / (2 * distance)

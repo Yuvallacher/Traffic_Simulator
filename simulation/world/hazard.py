@@ -2,6 +2,7 @@ from pygame.surface import Surface
 from pygame.math import Vector2
 from abc import ABC, abstractmethod
 
+id = 0
 class Hazard:
     def __init__(self, type: str, location: Vector2, roadIndex: int, directionIndex: int, images: list[Surface], attributes: dict, priority: int):
         self.type = type
@@ -11,12 +12,22 @@ class Hazard:
         self.images = images
         self.attributes = attributes
         self.priority = priority
+        global id
+        self.id = id + 1
+        id += 1
+        
 
     @abstractmethod
-    def affect_vehicle(self, vehicle, distance: float):
+    def affect_vehicle(self, vehicle, distance: float) -> float:
         """
-        Default behavior if no specific hazard class overrides it.
-        Can be overridden by subclasses.
+        Tells the vehicle how it should behave based on the hazard's type and attributes
+        """
+        pass
+    
+    @abstractmethod
+    def check_hazard_rule_completion(self, vehicle, distance : float) -> bool:
+        """
+        Tells the vehicle wether it "completed" the hazard's requirements
         """
         pass
 
@@ -25,15 +36,45 @@ class SpeedLimit(Hazard):
     def __init__(self, location: Vector2, roadIndex: int, directionIndex: int, images: list[Surface], speed_limit: int):
         super().__init__("speedLimit", location, roadIndex, directionIndex, images, {"limit": speed_limit}, priority=1)
 
-    def affect_vehicle(self, vehicle, distance: float):
+    def affect_vehicle(self, vehicle, distance: float) -> float:
         if distance <= 50:
             vehicle.set_desired_speed(self.attributes["limit"])
+        return -10
+
+    def check_hazard_rule_completion(self, vehicle, distance : float) -> bool:
+        return True
 
 
 class StopSign(Hazard):
     def __init__(self, location: Vector2, roadIndex: int, directionIndex: int, images: list[Surface]):
         super().__init__("stopSign", location, roadIndex, directionIndex, images, {}, priority=2)
 
-    def affect_vehicle(self, vehicle, distance: float):
-        if distance <= 30:  # Adjust based on desired behavior
-            vehicle.decelerate_to_stop(distance)
+    def affect_vehicle(self, vehicle, distance: float) -> float:
+        return vehicle.decelerate_to_stop(distance, vehicle.speed)
+
+    def check_hazard_rule_completion(self, vehicle, distance : float) -> bool:
+        return distance <= 25 and vehicle.speed == 0
+
+
+class TrafficLight(Hazard):
+    def __init__(self, location: Vector2, roadIndex: int, directionIndex: int, images: list[Surface], color : list[bool]):
+        super().__init__("trafficLight", location, roadIndex, directionIndex, images, {"isRedLight": color[0], "isYellowLight": color[1], "isGreenLight": color[2]}, priority=2)
+        
+    def affect_vehicle(self, vehicle, distance: float) -> float:
+        if self.attributes["isRedLight"]:
+            return vehicle.decelerate_to_stop(distance, vehicle.speed)
+        elif self.attributes["isYellowLight"]:
+            pass
+        elif self.attributes["isGreenLight"]:
+            return -10
+        
+    def check_hazard_rule_completion(self, vehicle, distance: float) -> bool:
+        if distance <= 25:
+            if self.attributes["isGreenLight"]:
+                return True
+            elif self.attributes["isYellowLight"]:
+                pass
+            else: # self.attributes["isRedLight"]
+                return False
+        
+        return False
