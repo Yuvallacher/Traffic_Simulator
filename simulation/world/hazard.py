@@ -42,7 +42,9 @@ class SpeedLimit(Hazard):
         return -10
 
     def check_hazard_rule_completion(self, vehicle, distance : float) -> bool:
-        return True
+        if distance <= 50:
+            return True
+        return False
 
 
 class StopSign(Hazard):
@@ -53,7 +55,7 @@ class StopSign(Hazard):
         return vehicle.decelerate_to_stop(distance, vehicle.speed)
 
     def check_hazard_rule_completion(self, vehicle, distance : float) -> bool:
-        return distance <= 25 and vehicle.speed == 0
+        return distance <= 40 and vehicle.speed == 0
 
 
 class TrafficLight(Hazard):
@@ -76,5 +78,5 @@ class TrafficLight(Hazard):
                 pass
             else: # self.attributes["isRedLight"]
                 return False
-        
-        return False
+        else:
+            return False

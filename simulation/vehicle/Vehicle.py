@@ -197,8 +197,11 @@ class Vehicle:
         closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
         acceleration = closestHazard.affect_vehicle(self, distanceToHazardAhead)
         if (closestHazard.type == 'speedLimit') or (closestHazard.type == 'trafficLight' and closestHazard.attributes["isGreenLight"]): #TODO think about yellow light
+            print(type(closestHazard)) 
             acceleration = self.acceleration_for_clear_road()
-        
+        if closestHazard.type == 'stopSign' or (closestHazard.type == 'trafficLight' and closestHazard.attributes["isRedLight"]): #TODO think about yellow light:
+            if distanceToHazardAhead > 40:
+                acceleration = self.acceleration_for_clear_road()
         hazardCompletionStatus = closestHazard.check_hazard_rule_completion(self, distanceToHazardAhead)
         self.update_encountered_hazard_status(closestHazard.id, hazardCompletionStatus)
         return acceleration
@@ -220,7 +223,7 @@ class Vehicle:
     
     def update_encountered_hazard_status(self, hazardID : int, hazardCompletionStatus : bool):
         if hazardID not in self.encounteredHazards.keys():
-            self.encounteredHazards[hazardID] = True
+            self.encounteredHazards[hazardID] = False 
         else:
             self.encounteredHazards[hazardID] = hazardCompletionStatus
         

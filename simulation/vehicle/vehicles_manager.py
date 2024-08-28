@@ -36,7 +36,7 @@ class VehiclesManager:
                                 space_available = True
                                 for vehicle in self.vehicles:
                                     if vehicle.roadIndex == roadIndex and vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.currentLaneIndex == direction.index(lane):
-                                        if vehicle.targetPositionIndex <= 8:
+                                        if vehicle.targetPositionIndex <= 3:
                                             space_available = False
                                             break
                                 if space_available:
