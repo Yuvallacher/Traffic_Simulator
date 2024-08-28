@@ -75,20 +75,17 @@ class Vehicle:
         
     def update_vehicle_edges_and_corners(self):
         normalizedVector = Vector2(1, 0)
-        coefficient = 1
-        if self.driveAngle == 90 or self.driveAngle == 270:
-            coefficient *= -1
-                        
-        self.frontEdgeOfVehicle = (self.location + coefficient * (normalizedVector.rotate(self.driveAngle) * self.lengthOffset))
-        self.backEdgeOfVehicle = self.location + coefficient * (normalizedVector.rotate(self.driveAngle + 180) * self.lengthOffset)
-        self.rightEdgeOfVehicle = self.location + coefficient * ( normalizedVector.rotate(self.driveAngle + 90) * self.widthOffset)
-        self.leftEdgeOfVehicle = self.location + coefficient * (normalizedVector.rotate(self.driveAngle - 90) * self.widthOffset)
+                                
+        self.frontEdgeOfVehicle = (self.location + (normalizedVector.rotate(-self.driveAngle) * self.lengthOffset))
+        self.backEdgeOfVehicle = self.location + (normalizedVector.rotate(-self.driveAngle + 180) * self.lengthOffset)
+        self.rightEdgeOfVehicle = self.location + ( normalizedVector.rotate(-self.driveAngle + 90) * self.widthOffset)
+        self.leftEdgeOfVehicle = self.location + (normalizedVector.rotate(-self.driveAngle - 90) * self.widthOffset)
         self.edges = [self.frontEdgeOfVehicle, self.backEdgeOfVehicle, self.rightEdgeOfVehicle, self.leftEdgeOfVehicle]
         
-        self.frontLeftCorner = self.location + coefficient * (normalizedVector.rotate(self.driveAngle) * self.lengthOffset + normalizedVector.rotate(self.driveAngle - 90) * self.widthOffset)
-        self.backLeftCorner = self.location + coefficient * (normalizedVector.rotate(self.driveAngle + 180) * self.lengthOffset + normalizedVector.rotate(self.driveAngle - 90) * self.widthOffset)
-        self.frontRightcorner = self.location + coefficient * (normalizedVector.rotate(self.driveAngle) * self.lengthOffset + normalizedVector.rotate(self.driveAngle + 90) * self.widthOffset)
-        self.backRightCorner = self.location + coefficient * (normalizedVector.rotate(self.driveAngle + 180) * self.lengthOffset + normalizedVector.rotate(self.driveAngle + 90) * self.widthOffset)
+        self.frontLeftCorner = self.location + (normalizedVector.rotate(-self.driveAngle) * self.lengthOffset + normalizedVector.rotate(-self.driveAngle - 90) * self.widthOffset)
+        self.backLeftCorner = self.location + (normalizedVector.rotate(-self.driveAngle + 180) * self.lengthOffset + normalizedVector.rotate(-self.driveAngle - 90) * self.widthOffset)
+        self.frontRightcorner = self.location + (normalizedVector.rotate(-self.driveAngle) * self.lengthOffset + normalizedVector.rotate(-self.driveAngle + 90) * self.widthOffset)
+        self.backRightCorner = self.location + (normalizedVector.rotate(-self.driveAngle + 180) * self.lengthOffset + normalizedVector.rotate(-self.driveAngle + 90) * self.widthOffset)
         self.corners = [self.frontLeftCorner, self.frontRightcorner, self.backRightCorner, self.backLeftCorner]
 
         
@@ -166,7 +163,7 @@ class Vehicle:
         if self.speed > self.desiredSpeed:
             return -comfortableDeceleration * 0.0167
         elif self.speed + accelerationSpeed <= self.desiredSpeed:
-            return accelerationSpeed 
+            return accelerationSpeed
         else:
             return (self.desiredSpeed - self.speed) 
     
@@ -190,14 +187,13 @@ class Vehicle:
             if distanceToVehicleAhead < 0.65 * safeStoppingDistance:
                 acceleration -= 0.5 * comfortableDeceleration
 
-        return acceleration
+        return acceleration * 0.0167
         
     
     def acceleration_for_only_hazard_ahead(self, hazardsAhead : list[Hazard]) -> float:
         closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
         acceleration = closestHazard.affect_vehicle(self, distanceToHazardAhead)
         if (closestHazard.type == 'speedLimit') or (closestHazard.type == 'trafficLight' and closestHazard.attributes["isGreenLight"]): #TODO think about yellow light
-            print(type(closestHazard)) 
             acceleration = self.acceleration_for_clear_road()
         if closestHazard.type == 'stopSign' or (closestHazard.type == 'trafficLight' and closestHazard.attributes["isRedLight"]): #TODO think about yellow light:
             if distanceToHazardAhead > 40:
@@ -398,10 +394,14 @@ class Vehicle:
         surroundings['vehicle_ahead'] = None
         surroundings['hazards_ahead'] = []
         
+        if self == allVehicles[0]:
+            if self.inJunction:
+                x = 10
         targetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex)
-        if self.targetPositionIndex <= 1 or targetPosition == self.location:
+        if (not self.inJunction and self.targetPositionIndex <= 1) or targetPosition == self.location:
             return surroundings
-        direction = (self.location - targetPosition).normalize()
+        # direction = (self.location - targetPosition).normalize()
+        direction = Vector2(1, 0).rotate(-self.driveAngle)
 
         frontFov = self.create_fov_boundary(direction, -45, 45, 200)
         leftSideFov = self.create_fov_boundary(direction, -170, -20, 200)                    
@@ -431,6 +431,14 @@ class Vehicle:
         
         # line(self.screen, (0, 255, 0), self.leftEdgeOfVehicle, (self.leftEdgeOfVehicle + leftSideFov[0]), 1)
         # line(self.screen, (0, 255, 0), self.leftEdgeOfVehicle, (self.leftEdgeOfVehicle + leftSideFov[1]), 1)
+        
+        #drawing corners of vehicle - DELETE LATER
+        line(self.screen, (255, 255, 0), self.backRightCorner, self.backLeftCorner, 1)
+        line(self.screen, (255, 255, 0), self.backLeftCorner, self.frontLeftCorner, 1)
+        line(self.screen, (255, 255, 0), self.frontLeftCorner, self.frontRightcorner, 1)
+        line(self.screen, (255, 255, 0), self.frontRightcorner, self.backRightCorner, 1)
+        
+        
         for hazard in hazards:
             rect = hazard.images[0].get_rect(topleft=(hazard.location.x, hazard.location.y))
             hazardCorners = [
