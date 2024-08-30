@@ -12,6 +12,7 @@ class Road:
         self.laneImages = laneImages
         self.imagesPositions = imagesPositions
         self.junctions = junctions
+ 
         
         
     def get_target_position(self, directionIndex : int, laneIndex : int, currentTargetPositionIndex : int) -> Vector2:
@@ -85,7 +86,11 @@ class Road:
     
     def update_road_and_direction_priority(self, junctionIndex : int, roadIndex : int, directionIndex : int, priority : int):
         self.junctions[junctionIndex].priorities[(str(roadIndex), str(directionIndex))] = priority if priority >= 1 and priority <= 2 else 2
-    
+    # === Added ===
+    def is_first_in_junction_queue(self, junctionIndex : int, vehicleId : int):
+        if self.junctions[junctionIndex].check_queue_position(vehicleId) == 0:
+            return True
+        return False
     
     #======== class Lane ========#
     class Lane:
@@ -100,12 +105,24 @@ class Road:
             self.paths = paths
             self.priorities : dict[tuple[str, str], int] = {}
             self.id = id
+            # === Added ===
+            self.queue = []
         
         def initiate_priorities(self, roadIndex):
             for directionIndex in self.paths.keys():
                 self.priorities[(roadIndex, directionIndex)] = 2
-        
-        
+        # === Added ===
+        def add_to_queue(self, vehicleId : int):
+            self.queue.append(vehicleId)
+
+        def remove_from_queue(self, vehicleId : int): 
+            if len(self.queue) > 0:   
+                self.queue.pop(0)
+        def check_queue_position(self, vehicleId : int):
+            if vehicleId in self.queue:
+                return self.queue.index(vehicleId)
+            return -1
+                    
 
 
 class RoadBuilder:

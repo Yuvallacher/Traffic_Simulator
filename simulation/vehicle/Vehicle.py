@@ -125,7 +125,10 @@ class Vehicle:
                 self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.turnDirection = self.draw_desired_junction_path(pathOptions)
                 # self.targetPositionIndex = 0
                 self.junctionTargetPositionIndex = 0
-                self.inJunction = True
+                self.inJunction = True 
+                # === Added ===
+                # TODO implement check if entered vehicle has same destination as me. if so ill wait
+                road.junctions[self.junctionIndex].add_to_queue(self.id)
                 self.set_desired_speed(40)
                
         if self.inJunction:
@@ -133,6 +136,8 @@ class Vehicle:
                 nextTargetPosition = road.get_target_position_junction(self.junctionIndex, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.junctionTargetPositionIndex + 1)
                 endOfJunction, targetPositionIndex = road.is_end_of_junction(nextTargetPosition, self.junctionIndex, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex)
                 if endOfJunction:
+                    # === Added ===
+                    road.junctions[self.junctionIndex].remove_from_queue(self.id)
                     self.inJunction = False
                     self.enterJunction = False
                     self.targetPositionIndex = targetPositionIndex
@@ -141,6 +146,7 @@ class Vehicle:
                     self.set_desired_speed(world.MAX_SPEED)
             else:
                 self.enterJunction = self.can_enter_junction(allHazards['vehicles_front'], allHazards['vehicles_right'], allHazards['vehicles_left'], self.turnDirection, road, world.roads)
+                #if self.enterJunction == True:
                 nextTargetPosition = road.get_target_position_junction(self.junctionIndex, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.junctionTargetPositionIndex)
                 # self.accelerate_and_break(self.decelerate_to_stop(20, self.speed)) 
                 self.speed = 0 #DELETEEEEEEEE
@@ -245,9 +251,10 @@ class Vehicle:
         else: # turnDirection == "L"
             samePriority = self.check_right_of_way([rightFOV, frontFOV], road, "==", allRoads)
             lowerPriority = self.check_right_of_way([rightFOV, frontFOV, leftFOV], road, "<", allRoads)
-            rightOfWay = samePriority and lowerPriority
-        return rightOfWay
+            rightOfWay = (samePriority or road.is_first_in_junction_queue(self.junctionIndex, self.id)) and lowerPriority 
+        return rightOfWay 
     
+    # def check_if_
     
     def check_right_of_way(self, FOVs : list[list['Vehicle']], road : Road, sign : str, allRoads : list[Road]) -> bool:
         haveRightOfWay = True
@@ -277,7 +284,8 @@ class Vehicle:
                     
     
     def distance_to_junction(self, junctionIndex : int, road : Road) -> float:
-        if self.inJunction:
+        # if self.inJunction:
+        if self.enterJunction:    
             return 0
         else:
             for i in range(0, 3):
@@ -471,14 +479,16 @@ class Vehicle:
         surroundings['vehicles_right'] = []
         surroundings['vehicle_ahead'] = None
         surroundings['hazards_ahead'] = []
-        
+        if self.location.y > 565 and self.location.y < 585:
+            x = 10
         targetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex)
         # # if (not self.inJunction and self.targetPositionIndex <= 1) or targetPosition == self.location:
         # if (self.targetPositionIndex <= 1) or targetPosition == self.location:
         # # if targetPosition == self.location:
         #     return surroundings
         direction = Vector2(1, 0).rotate(-self.driveAngle)
-
+        if self.length == 60:
+            x = 10
         frontFov = self.create_fov_boundary(direction, -45, 45, 250)
         leftSideFov = self.create_fov_boundary(direction, -170, -20, 250)                    
         rightSideFov = self.create_fov_boundary(direction, 20, 170, 250)
