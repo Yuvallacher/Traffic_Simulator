@@ -24,7 +24,8 @@ AWARENESS_AVG = 1
 AWARENESS_STANDART_DEVIATION = 0.1
 
 class Vehicle:
-    def __init__(self, screen, location : Vector2, speedCoefficient : float, roadIndex : int, directionIndex : int, currentLaneIndex : int, driveAngle : float, image : Surface, weight : float, width : int, length : int, speed=60):
+    def __init__(self, id : int, screen, location : Vector2, speedCoefficient : float, roadIndex : int, directionIndex : int, currentLaneIndex : int, driveAngle : float, image : Surface, weight : float, width : int, length : int, speed=60):
+        self.id = id
         self.location = location
         self.speed = PixelsConverter.convert_speed_to_pixels_per_frames(speed)
         self.desiredSpeed = 0.0
@@ -43,16 +44,19 @@ class Vehicle:
         self.currentLaneIndex = currentLaneIndex
         self.desiredLaneIndex = self.currentLaneIndex
         self.targetPositionIndex = 0
+        self.junctionTargetPositionIndex = 0
         self.inJunction = False
+        self.enterJunction = False
         self.desiredJunctionRoadIndex = self.roadIndex
         self.desiredJunctionsDirectionIndex = self.directionIndex
+        self.turnDirection : str = ""
         self.junctionIndex : int
         self.inAccident = False
         self.accident : Accident = None
         self.shouldSwitchLane = False
         self.activelySwitchingLane = False
         self.finishedSwitchingLane = False
-        self.encounteredHazards : dict[int, bool] = {}
+        self.completedHazards : dict[int, bool] = {}
         self.driveAngle = driveAngle
         self.frontEdgeOfVehicle : Vector2
         self.backEdgeOfVehicle : Vector2
@@ -104,7 +108,6 @@ class Vehicle:
         """
         acceleration = self.calculate_acceleration(allHazards, world.POLITENESS)
         self.accelerate_and_break(acceleration)
-        # self.accelerate_and_break(allHazards['vehicle_ahead'], allHazards['hazards_ahead'], world.POLITENESS)
         
         if not self.inJunction:
             if self.finishedSwitchingLane:
@@ -119,20 +122,28 @@ class Vehicle:
             nextTargetPosition = road.get_target_position(self.directionIndex, self.desiredLaneIndex, self.targetPositionIndex + 1)
             startOfJunction, pathOptions, self.junctionIndex = road.is_start_of_junction(nextTargetPosition, self.directionIndex)
             if startOfJunction:
-                self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex = self.draw_desired_junction_path(pathOptions)
-                self.targetPositionIndex = 0
+                self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.turnDirection = self.draw_desired_junction_path(pathOptions)
+                # self.targetPositionIndex = 0
+                self.junctionTargetPositionIndex = 0
                 self.inJunction = True
                 self.set_desired_speed(40)
                
         if self.inJunction:
-            nextTargetPosition = road.get_target_position_junction(self.junctionIndex, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.targetPositionIndex + 1)
-            endOfJunction, targetPositionIndex = road.is_end_of_junction(nextTargetPosition, self.junctionIndex, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex)
-            if endOfJunction:
-                self.inJunction = False
-                self.targetPositionIndex = targetPositionIndex
-                self.roadIndex = int(self.desiredJunctionRoadIndex)
-                self.directionIndex = int(self.desiredJunctionsDirectionIndex)
-                self.set_desired_speed(world.MAX_SPEED)
+            if self.enterJunction:
+                nextTargetPosition = road.get_target_position_junction(self.junctionIndex, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.junctionTargetPositionIndex + 1)
+                endOfJunction, targetPositionIndex = road.is_end_of_junction(nextTargetPosition, self.junctionIndex, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex)
+                if endOfJunction:
+                    self.inJunction = False
+                    self.enterJunction = False
+                    self.targetPositionIndex = targetPositionIndex
+                    self.roadIndex = int(self.desiredJunctionRoadIndex)
+                    self.directionIndex = int(self.desiredJunctionsDirectionIndex)
+                    self.set_desired_speed(world.MAX_SPEED)
+            else:
+                self.enterJunction = self.can_enter_junction(allHazards['vehicles_front'], allHazards['vehicles_right'], allHazards['vehicles_left'], self.turnDirection, road, world.roads)
+                nextTargetPosition = road.get_target_position_junction(self.junctionIndex, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.junctionTargetPositionIndex)
+                # self.accelerate_and_break(self.decelerate_to_stop(20, self.speed)) 
+                self.speed = 0 #DELETEEEEEEEE
         
         self.update_vehicle_location(nextTargetPosition, self.speed) 
         
@@ -218,17 +229,73 @@ class Vehicle:
     
     
     def update_encountered_hazard_status(self, hazardID : int, hazardCompletionStatus : bool):
-        if hazardID not in self.encounteredHazards.keys():
-            self.encounteredHazards[hazardID] = False 
+        if hazardID not in self.completedHazards.keys():
+            self.completedHazards[hazardID] = False 
         else:
-            self.encounteredHazards[hazardID] = hazardCompletionStatus
+            self.completedHazards[hazardID] = hazardCompletionStatus
         
+
+    def can_enter_junction(self, frontFOV : list['Vehicle'], rightFOV : list['Vehicle'], leftFOV : list['Vehicle'], turnDirection : str, road : Road, allRoads : list[Road]) -> bool:
+        if turnDirection == "R":
+            rightOfWay = self.check_right_of_way([leftFOV, frontFOV], road, "<", allRoads)
+        elif turnDirection == "S":
+            samePriority = self.check_right_of_way([rightFOV], road, "==", allRoads)
+            lowerPriority = self.check_right_of_way([rightFOV, frontFOV, leftFOV], road, "<", allRoads)
+            rightOfWay = samePriority and lowerPriority
+        else: # turnDirection == "L"
+            samePriority = self.check_right_of_way([rightFOV, frontFOV], road, "==", allRoads)
+            lowerPriority = self.check_right_of_way([rightFOV, frontFOV, leftFOV], road, "<", allRoads)
+            rightOfWay = samePriority and lowerPriority
+        return rightOfWay
     
-    def draw_desired_junction_path(self, pathOptions : dict) -> list[str, str]:
-        keys = list(pathOptions.keys())
-        numberOfOptions = len(keys)
-        chosenKeyIndex = random.randint(0, numberOfOptions - 1)
-        return keys[chosenKeyIndex].strip("[]").split(",")
+    
+    def check_right_of_way(self, FOVs : list[list['Vehicle']], road : Road, sign : str, allRoads : list[Road]) -> bool:
+        haveRightOfWay = True
+        junctionIndex = self.junctionIndex
+        priority = road.check_road_and_direction_priority(junctionIndex, self.roadIndex, self.directionIndex)
+        for fov in FOVs:
+            for vehicle in fov:
+                if sign == "<":
+                    # if (priority < road.check_road_and_direction_priority(junctionIndex, vehicle.roadIndex, vehicle.directionIndex)):
+                    for otherVehicleJunctionIndex in range(len(allRoads[vehicle.roadIndex].junctions)):
+                        if road.junctions[junctionIndex].id == allRoads[vehicle.roadIndex].junctions[otherVehicleJunctionIndex].id:
+                            if (priority < allRoads[vehicle.roadIndex].check_road_and_direction_priority(otherVehicleJunctionIndex, vehicle.roadIndex, vehicle.directionIndex)):
+                                if vehicle.distance_to_junction(otherVehicleJunctionIndex, allRoads[vehicle.roadIndex]) < 3:
+                                # if vehicle.inJunction:
+                                    haveRightOfWay = False
+                                    break
+                elif sign == "==":
+                    # if (priority == road.check_road_and_direction_priority(junctionIndex, vehicle.roadIndex, vehicle.directionIndex)):
+                    for otherVehicleJunctionIndex in range(len(allRoads[vehicle.roadIndex].junctions)):
+                        if road.junctions[junctionIndex].id == allRoads[vehicle.roadIndex].junctions[otherVehicleJunctionIndex].id:
+                            if (priority == allRoads[vehicle.roadIndex].check_road_and_direction_priority(otherVehicleJunctionIndex, vehicle.roadIndex, vehicle.directionIndex)):
+                                if vehicle.distance_to_junction(otherVehicleJunctionIndex, allRoads[vehicle.roadIndex]) < 3:
+                                # if vehicle.inJunction:
+                                    haveRightOfWay = False
+                                    break
+        return haveRightOfWay
+                    
+    
+    def distance_to_junction(self, junctionIndex : int, road : Road) -> float:
+        if self.inJunction:
+            return 0
+        else:
+            for i in range(0, 3):
+                nextTargetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex + i)
+                startOfJunction, junction, myJunctionIndex = road.is_start_of_junction(nextTargetPosition, self.directionIndex)
+                if startOfJunction and myJunctionIndex == junctionIndex:
+                    return i
+            return float('inf')
+            
+    
+    
+    def draw_desired_junction_path(self, pathOptions : dict) -> list[str, str, str]:
+        directionKey = list(pathOptions.keys())
+        numberOfOptions = len(directionKey)
+        desiredPathIndex = random.randint(0, numberOfOptions - 1)
+        desiredRoadJunctionIndex, desiredDirectionJunctionIndex = directionKey[desiredPathIndex].strip("[]").split(",")
+        turnDirection = pathOptions[f"[{desiredRoadJunctionIndex},{desiredDirectionJunctionIndex}]"][2]
+        return desiredRoadJunctionIndex, desiredDirectionJunctionIndex, turnDirection
     
     
     def calculate_safe_distance(self, baseDistance: float) -> float:
@@ -308,7 +375,6 @@ class Vehicle:
                     self.check_for_space_in_target_lane(vehiclesLeft, vehicleAhead, leftLaneIndex, isLeftDirection=True)
 
             
-
     def check_for_space_in_target_lane(self, vehiclesOnSide : list['Vehicle'], vehicleAhead : 'Vehicle', targetLaneIndex : int, isLeftDirection : bool):
         switchLane = False
         direction = 'left' if isLeftDirection else 'right'
@@ -348,7 +414,10 @@ class Vehicle:
             self.location += direction
         else:
             self.location.update(targetPos)
-            self.targetPositionIndex += 1
+            if not self.inJunction:
+                self.targetPositionIndex += 1
+            else:
+                self.junctionTargetPositionIndex += 1
 
         self.rect.center = self.location
         self.update_vehicle_edges_and_corners()
@@ -363,12 +432,15 @@ class Vehicle:
     def check_collision(self, other_vehicle : 'Vehicle'):
         offset = (other_vehicle.rect.left - self.rect.left, other_vehicle.rect.top - self.rect.top)
         return self.mask.overlap(other_vehicle.mask, offset) is not None         
+
     
     def set_desired_speed(self, maxSpeed : int):
         self.desiredSpeed = PixelsConverter.convert_speed_to_pixels_per_frames(self.speedCoefficient * maxSpeed)
+
    
     def set_politeness(self, politeness : int):
         self.politeness = self.politenessCoefficient * politeness
+
         
     def set_awareness(self, awareness):
         self.awareness = self.awarenessCoefficient * awareness
@@ -377,10 +449,16 @@ class Vehicle:
         
     
     def recieve_fov_lines(self, road : Road, angle1 : int, angle2 : int):
-        targetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex)
-        if not (self.targetPositionIndex <= 1 or targetPosition == self.location):
-            direction = (self.location - targetPosition).normalize()
-            return self.create_fov_boundary(direction, angle1, angle2, 200)
+        if not self.inJunction:
+            targetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex)
+            if not (self.targetPositionIndex <= 1 or targetPosition == self.location):
+                direction = (self.location - targetPosition).normalize()
+                return self.create_fov_boundary(direction, angle1, angle2, 200)
+        else:
+            targetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.junctionTargetPositionIndex)
+            if not (self.junctionTargetPositionIndex <= 1 or targetPosition == self.location):
+                direction = (self.location - targetPosition).normalize()
+                return self.create_fov_boundary(direction, angle1, angle2, 200)
     
     
     def get_all_hazards_around_vehicle(self, allVehicles : list['Vehicle'], road : Road, dataManager : DataManager, accidentManager : AccidentManager, hazards : list[Hazard]) -> dict:
@@ -394,32 +472,28 @@ class Vehicle:
         surroundings['vehicle_ahead'] = None
         surroundings['hazards_ahead'] = []
         
-        if self == allVehicles[0]:
-            if self.inJunction:
-                x = 10
         targetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex)
-        if (not self.inJunction and self.targetPositionIndex <= 1) or targetPosition == self.location:
-            return surroundings
-        # direction = (self.location - targetPosition).normalize()
+        # # if (not self.inJunction and self.targetPositionIndex <= 1) or targetPosition == self.location:
+        # if (self.targetPositionIndex <= 1) or targetPosition == self.location:
+        # # if targetPosition == self.location:
+        #     return surroundings
         direction = Vector2(1, 0).rotate(-self.driveAngle)
 
-        frontFov = self.create_fov_boundary(direction, -45, 45, 200)
-        leftSideFov = self.create_fov_boundary(direction, -170, -20, 200)                    
-        rightSideFov = self.create_fov_boundary(direction, 20, 170, 200)
-        #TODO: more checks for surroundings like hazards, turns, etc.
-        
+        frontFov = self.create_fov_boundary(direction, -45, 45, 250)
+        leftSideFov = self.create_fov_boundary(direction, -170, -20, 250)                    
+        rightSideFov = self.create_fov_boundary(direction, 20, 170, 250)
+
         for otherVehicle in allVehicles:
-            if self != otherVehicle:
+            if self.id != otherVehicle.id:
                 if self.check_collision(otherVehicle): 
                     if not (self.inAccident and otherVehicle.inAccident):
                         self.handle_accident(otherVehicle, dataManager, accidentManager)
                     return surroundings
-                
-                if self.is_object_in_fov(otherVehicle.corners, frontFov[0], frontFov[1], 200):
+                if self.is_object_in_fov(otherVehicle.corners, frontFov[0], frontFov[1], 250):
                     surroundings['vehicles_front'].append(otherVehicle)
-                if self.is_object_in_fov(otherVehicle.corners, leftSideFov[0], leftSideFov[1], 200):
+                if self.is_object_in_fov(otherVehicle.corners, leftSideFov[0], leftSideFov[1], 250):
                     surroundings['vehicles_left'].append(otherVehicle)
-                if self.is_object_in_fov(otherVehicle.corners, rightSideFov[0], rightSideFov[1], 200):
+                if self.is_object_in_fov(otherVehicle.corners, rightSideFov[0], rightSideFov[1], 250):
                     surroundings['vehicles_right'].append(otherVehicle)
             
         # drawings of fovs - DELETE LATER
@@ -433,10 +507,10 @@ class Vehicle:
         # line(self.screen, (0, 255, 0), self.leftEdgeOfVehicle, (self.leftEdgeOfVehicle + leftSideFov[1]), 1)
         
         #drawing corners of vehicle - DELETE LATER
-        line(self.screen, (255, 255, 0), self.backRightCorner, self.backLeftCorner, 1)
-        line(self.screen, (255, 255, 0), self.backLeftCorner, self.frontLeftCorner, 1)
-        line(self.screen, (255, 255, 0), self.frontLeftCorner, self.frontRightcorner, 1)
-        line(self.screen, (255, 255, 0), self.frontRightcorner, self.backRightCorner, 1)
+        # line(self.screen, (255, 255, 0), self.backRightCorner, self.backLeftCorner, 1)
+        # line(self.screen, (255, 255, 0), self.backLeftCorner, self.frontLeftCorner, 1)
+        # line(self.screen, (255, 255, 0), self.frontLeftCorner, self.frontRightcorner, 1)
+        # line(self.screen, (255, 255, 0), self.frontRightcorner, self.backRightCorner, 1)
         
         
         for hazard in hazards:
@@ -449,11 +523,15 @@ class Vehicle:
             ]
             if self.is_object_in_fov(hazardCorners, frontFov[0], frontFov[1], 150):
                 if self.roadIndex == hazard.roadIndex and self.directionIndex == hazard.directionIndex:
-                    if hazard.id not in self.encounteredHazards.keys() or self.encounteredHazards[hazard.id] == False:
+                    if hazard.id not in self.completedHazards.keys() or self.completedHazards[hazard.id] == False:
                         surroundings['hazards_ahead'].append(hazard)       
 
-        surroundings['vehicle_ahead'] = self.get_closest_vehicle_on_same_road(surroundings['vehicles_front'], self.desiredLaneIndex, 'front', checkAllLanes=True)
+        if not self.inJunction:
+            surroundings['vehicle_ahead'] = self.get_closest_vehicle_on_same_road(surroundings['vehicles_front'], self.desiredLaneIndex, 'front', checkAllLanes=True)
+        else:
+            surroundings['vehicle_ahead'] = self.get_closest_vehicle_in_front_fov(surroundings['vehicles_front'])
         return surroundings
+
 
     def handle_accident(self, otherVehicle : 'Vehicle', dataManager : DataManager, accidentManager : AccidentManager):
         if self.inAccident:
@@ -529,80 +607,22 @@ class Vehicle:
                                 minDistance = distance
                                 currentVehicleInDirection = vehicle
             return currentVehicleInDirection
+      
     
-    
-    # def accelerate_and_break(self, vehicleAhead: 'Vehicle', hazardsAhead : list[Hazard], politeness: int):
-    #     """
-    #     Calculates and updates a vehicle's speed according to the road's conditions - other vehicles, hazards, etc.
-    #     """
-    #     minimalDistance = 10 + politeness * 3 
+    def get_closest_vehicle_in_front_fov(self, vehiclesInFrontFov: list['Vehicle']) -> 'Vehicle':
+        if len(vehiclesInFrontFov) == 0:
+            return None
+        else:
+            closestVehicle = vehiclesInFrontFov[0]
+            edge = self.frontEdgeOfVehicle
+            minDistance = min(edge.distance_to(corner) for corner in vehiclesInFrontFov[0].corners)
+            for vehicle in vehiclesInFrontFov:
+                distance = min(edge.distance_to(corner) for corner in vehicle.corners)
+                if distance < minDistance:
+                    minDistance = distance
+                    closestVehicle = vehicle
+            return closestVehicle
         
-    #     comfortableDeceleration = 3 
-    #     maxAcceleration = 2  
-    #     accelerationFactor = maxAcceleration / self.weight
-        
-    #     noVehicleAhead = vehicleAhead is None
-    #     noHazardAhead = len(hazardsAhead) == 0
-    #     clearSpaceAhead = noVehicleAhead and noHazardAhead
-    #     if not noHazardAhead:
-    #         closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
-    #         if closestHazard.priority == 1:
-    #             clearSpaceAhead = noVehicleAhead
-    #             if closestHazard.type == "speedLimit":
-    #                 if distanceToHazardAhead <= 50:
-    #                     self.set_desired_speed(closestHazard.attributes["limit"])
- 
-    #     if clearSpaceAhead: # Open road - no hazards and no vehicles ahead
-    #         accelerationSpeed = PixelsConverter.convert_speed_to_pixels_per_frames(accelerationFactor)
-    #         if self.speed > self.desiredSpeed:
-    #             self.speed += -comfortableDeceleration * 0.0167
-    #         elif self.speed + accelerationSpeed <= self.desiredSpeed:
-    #             self.speed += accelerationSpeed
-    #         else:
-    #             self.speed = self.desiredSpeed
-    #     else:
-    #         if not noVehicleAhead and not noHazardAhead:
-    #             distanceToVehicleAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
-    #             closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
-    #             distanceToObjectAhead = min(distanceToVehicleAhead, distanceToHazardAhead)
-    #             if distanceToObjectAhead == distanceToHazardAhead:
-    #                 speedDifferenceToObjectAhead =  self.speed
-    #             #     if closestHazard.type == "stopSign":
-    #             #         deceleration = self.calculate_deceleration(distanceToObjectAhead, self.speed)
-    #             #         self.speed += deceleration
-    #             #         return     
-    #             else:
-    #                 speedDifferenceToObjectAhead = self.speed - vehicleAhead.speed
-    #         elif not noVehicleAhead:
-    #             distanceToObjectAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
-    #             speedDifferenceToObjectAhead = self.speed - vehicleAhead.speed
-    #         elif not noHazardAhead:
-    #             closestHazard, distanceToObjectAhead = self.get_closest_high_priority_hazard(hazardsAhead)
-    #             if closestHazard.type == "stopSign":
-    #                 distanceToStopSign = self.frontEdgeOfVehicle.distance_to(closestHazard.location)
-    #                 deceleration = self.calculate_deceleration(distanceToStopSign, self.speed)
-    #                 self.speed += deceleration
-    #                 return      
-    #             speedDifferenceToObjectAhead = self.speed
-            
-            
-    #         reactionTime = 0.38 * self.awareness
-    #         delta = 4
-
-    #         safeStoppingDistance = minimalDistance + self.speed * reactionTime + (self.speed * speedDifferenceToObjectAhead) / (2 * (maxAcceleration * comfortableDeceleration)**0.5)
-        
-    #         if distanceToObjectAhead > safeStoppingDistance: 
-    #             acceleration = maxAcceleration * (1 - (self.speed / self.desiredSpeed)**delta - (safeStoppingDistance / distanceToObjectAhead)**2)
-    #         else:
-    #             acceleration = -comfortableDeceleration
-    #             if distanceToObjectAhead < 0.65 * safeStoppingDistance:
-    #                 acceleration -= 0.5 * comfortableDeceleration
-
-    #         self.speed += acceleration
-            
-    #         # Ensure speed is not negative
-    #         self.speed = max(self.speed, 0)
-    
     
     def accelerate_and_break(self, acceleration : float):
         self.speed += acceleration
@@ -614,6 +634,7 @@ class Vehicle:
             return float('inf')  # Prevent division by zero
         deceleration = -(speed ** 2) / (2 * distance)
         return deceleration
+    
     
     def get_closest_high_priority_hazard(self, hazards : list[Hazard]) -> list[Hazard, float]:
         firstIteration = True
@@ -643,13 +664,16 @@ class Vehicle:
 
     # def get_vehicle_state(self, )
 
+
+
+
 #---------------------Car---------------------#
 class Car(Vehicle):
-    def __init__(self, screen, location : Vector2, roadIndex : int, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface, speed=60):
+    def __init__(self, id : int, screen, location : Vector2, roadIndex : int, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface, speed=60):
         self.colorIndex = random.randint(0, 4)
         averageSpeedForLane = CAR_AVG_SPEED - laneIndex * PixelsConverter.convert_speed_to_pixels_per_frames(3)
         speedCoefficient = normal(averageSpeedForLane, CAR_SPEED_STANDARD_DEVIATION)
-        super().__init__(screen, location, speedCoefficient, roadIndex, directionIndex, laneIndex, driveAngle, image, weight=2, width=20, length=30, speed=speed)
+        super().__init__(id, screen, location, speedCoefficient, roadIndex, directionIndex, laneIndex, driveAngle, image, weight=2, width=20, length=30, speed=speed)
     
     
     
@@ -658,8 +682,8 @@ class Car(Vehicle):
     
 #--------------------Truck--------------------#
 class Truck(Vehicle):
-    def __init__(self, screen, location : Vector2, roadIndex : int, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface, speed=60):
+    def __init__(self, id : int, screen, location : Vector2, roadIndex : int, directionIndex : int, laneIndex : int, driveAngle : float, image : Surface, speed=60):
         weight = normal(20, 3)
         averageSpeedForLane = TRUCK_AVG_SPEED - laneIndex * PixelsConverter.convert_speed_to_pixels_per_frames(3)
         speedCoefficient = normal(averageSpeedForLane, TRUCK_SPEED_STANDARD_DEVIATION)
-        super().__init__(screen, location, speedCoefficient, roadIndex, directionIndex, laneIndex, driveAngle, image, weight=weight, width=20, length=60, speed=speed)
+        super().__init__(id, screen, location, speedCoefficient, roadIndex, directionIndex, laneIndex, driveAngle, image, weight=weight, width=20, length=60, speed=speed)

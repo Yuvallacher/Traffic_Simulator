@@ -19,6 +19,7 @@ class VehiclesManager:
     def __init__(self, max_number_of_cars) -> None:
         self.vehicles : list[Vehicle] = []
         self.maxNumOfCars = max_number_of_cars
+        self.vehicleID = 1
 
 
     def add_vehicles(self, simulationWorld: World, screen):
@@ -36,7 +37,7 @@ class VehiclesManager:
                                 space_available = True
                                 for vehicle in self.vehicles:
                                     if vehicle.roadIndex == roadIndex and vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.currentLaneIndex == direction.index(lane):
-                                        if vehicle.targetPositionIndex <= 3:
+                                        if vehicle.targetPositionIndex <= 6:
                                             space_available = False
                                             break
                                 if space_available:
@@ -48,15 +49,16 @@ class VehiclesManager:
                                     car_probability = random.uniform(0, 1)
                                     if car_probability >= TRUCK_PROBABILITY:
                                         image = VehicleDrawer.get_car_image()
-                                        newVehicle = Car(screen, vehicleCoordinates, roadIndex, directionIndex, laneIndex, driveAngle, image, speed=simulationWorld.MAX_SPEED)
+                                        newVehicle = Car(self.vehicleID, screen, vehicleCoordinates, roadIndex, directionIndex, laneIndex, driveAngle, image, speed=simulationWorld.MAX_SPEED)
                                     else:
                                         image = VehicleDrawer.get_truck_image()
-                                        newVehicle = Truck(screen, vehicleCoordinates, roadIndex, directionIndex, laneIndex, driveAngle, image, speed=simulationWorld.MAX_SPEED)
+                                        newVehicle = Truck(self.vehicleID, screen, vehicleCoordinates, roadIndex, directionIndex, laneIndex, driveAngle, image, speed=simulationWorld.MAX_SPEED)
                                     newVehicle.set_desired_speed(simulationWorld.MAX_SPEED)
                                     newVehicle.set_politeness(simulationWorld.POLITENESS)
                                     newVehicle.set_awareness(simulationWorld.AWARENESS)
                                     newVehicle.rotate_vehicle() 
                                     self.vehicles.append(newVehicle)
+                                self.vehicleID += 1
                         
                         
     def updateCarPos(self, simulationWorld : World, dataManager : simulation.data.DataManager, accidentManager : simulation.data.Accident): #TODO probably move to a different place

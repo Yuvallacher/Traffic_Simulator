@@ -10,17 +10,23 @@ import pygame
 import sys
 
 simulationWorld = World("junction", 1)
+# simulationWorld = World("straight", 2)
 simulationWorld.set_vehicles_manager(VehiclesManager(simulationWorld.NUMBER_OF_CARS))
 dataManager = DataManager(filename='simulation_data.xlsx', export_interval=2)
 next_stat_update = pygame.time.get_ticks() + dataManager.export_interval * 1000
 
 speedLimit = SpeedLimit(Vector2([185, 405]), 1, 0, [pygame.transform.scale(pygame.image.load("pictures\\hazardsPictures\\speed_limit.png").convert(), (30,70))], 30)
-stopSign = StopSign(Vector2([700, 510]), 2, 0, [pygame.transform.scale(pygame.image.load("pictures\\hazardsPictures\\stop.jpg").convert(), (30,70))])
+stopSign = StopSign(Vector2([660, 510]), 2, 0, [pygame.transform.scale(pygame.image.load("pictures\\hazardsPictures\\stop.jpg").convert(), (30,70))])
+stopSign2 = StopSign(Vector2([660, 260]), 1, 1, [pygame.transform.scale(pygame.image.load("pictures\\hazardsPictures\\stop.jpg").convert(), (30,70))])
+simulationWorld.roads[2].update_road_and_direction_priority(0, 2, 0, 1)
+simulationWorld.roads[1].update_road_and_direction_priority(0, 1, 0, 1)
+simulationWorld.roads[1].update_road_and_direction_priority(0, 1, 1, 1)
 simulationWorld.add_hazard(speedLimit)
 simulationWorld.add_hazard(stopSign)
+simulationWorld.add_hazard(stopSign2)
 
 while simulationWorld.simulationRunning:
-    # simulationWorld.screen.fill(simulationWorld.WHITE)
+    simulationWorld.screen.fill(simulationWorld.WHITE)
     simulationWorld.screen.blit(simulationWorld.roads[0].laneImages[simulationWorld.roads[0].currNumOfLanes - 1], simulationWorld.roads[0].imagesPositions[simulationWorld.roads[0].currNumOfLanes - 1])
 
     simulationWorld.vehiclesManager.add_vehicles(simulationWorld, simulationWorld.screen)
@@ -30,6 +36,7 @@ while simulationWorld.simulationRunning:
 
     simulationWorld.screen.blit(speedLimit.images[0], speedLimit.location)
     simulationWorld.screen.blit(stopSign.images[0], stopSign.location)
+    simulationWorld.screen.blit(stopSign2.images[0], stopSign2.location)
     # simulationWorld.screen.blit(pygame.transform.scale(pygame.image.load(speedLimit.images[0]).convert(), (30,70)), speedLimit.location)
     # simulationWorld.screen.blit(pygame.transform.scale(pygame.image.load(stopSign.images[0]).convert(), (30,70)), stopSign.location)
     current_time = pygame.time.get_ticks()

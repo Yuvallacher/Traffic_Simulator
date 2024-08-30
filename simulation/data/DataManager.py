@@ -25,12 +25,17 @@ class DataManager:
 
     def update_stats(self, vehicles):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        avg_speed = sum(PixelsConverter.convert_pixels_per_frames_to_speed(vehicle.speed) for vehicle in vehicles) / len(vehicles) if vehicles else 0
-        density = len(vehicles)
+        total_speed, count = 0, 0
+        for vehicle in vehicles:
+            if not vehicle.inAccident:
+                total_speed += PixelsConverter.convert_pixels_per_frames_to_speed(vehicle.speed)
+                count += 1
+
+        avg_speed = total_speed / count if count > 0 else 0
         new_data = pd.DataFrame({
             'Time Stamp': [current_time],
             'Average Speed': [avg_speed],
-            'Density': [density]
+            'Density': [count]
         })
         self.stats_data = pd.concat([self.stats_data, new_data], ignore_index=True)
 
