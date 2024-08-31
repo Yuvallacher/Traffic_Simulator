@@ -26,6 +26,10 @@ class Road:
             return path[-1]
     
     
+    def get_junction_id(self, junctionIndex : int) -> int:
+        return self.junctions[junctionIndex].id
+
+    
     def is_start_of_junction(self, targetPosition : Vector2, sourceDirectionIndex : int) -> list[bool, dict, int]:
         """
         check if a given target position is the start of a junction. if so - return True and the path-options for the vehicle that asked
@@ -49,6 +53,12 @@ class Road:
             return path[currentTargetPositionIndex] 
         else:
             return path[-1]
+    
+    
+    def get_junction_path(self,  junctionIndex : int, sourceDirectionIndex : int, destRoadIndex : str, destDirectionIndex : str) -> list[Vector2]:
+        destChoiceIndex = f"[{destRoadIndex},{destDirectionIndex}]"
+        path = self.junctions[junctionIndex].paths[str(sourceDirectionIndex)][destChoiceIndex][1]
+        return path
         
     
     def is_end_of_junction(self, targetPosition : Vector2, junctionIndex : int, sourceDirectionIndex : int, destRoadIndex : str, destDirectionIndex : str) -> list[bool, int]:

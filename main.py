@@ -16,8 +16,8 @@ dataManager = DataManager(filename='simulation_data.xlsx', export_interval=2)
 next_stat_update = pygame.time.get_ticks() + dataManager.export_interval * 1000
 
 speedLimit = SpeedLimit(Vector2([185, 405]), 1, 0, [pygame.transform.scale(pygame.image.load("pictures\\hazardsPictures\\speed_limit.png").convert(), (30,70))], 30)
-stopSign = StopSign(Vector2([660, 510]), 2, 0, [pygame.transform.scale(pygame.image.load("pictures\\hazardsPictures\\stop.jpg").convert(), (30,70))])
-stopSign2 = StopSign(Vector2([660, 260]), 1, 1, [pygame.transform.scale(pygame.image.load("pictures\\hazardsPictures\\stop.jpg").convert(), (30,70))])
+stopSign = StopSign(Vector2([670, 510]), 2, 0, [pygame.transform.scale(pygame.image.load("pictures\\hazardsPictures\\stop.jpg").convert(), (30,70))])
+stopSign2 = StopSign(Vector2([670, 260]), 1, 1, [pygame.transform.scale(pygame.image.load("pictures\\hazardsPictures\\stop.jpg").convert(), (30,70))])
 simulationWorld.roads[2].update_road_and_direction_priority(0, 2, 0, 1)
 simulationWorld.roads[1].update_road_and_direction_priority(0, 1, 0, 1)
 simulationWorld.roads[1].update_road_and_direction_priority(0, 1, 1, 1)
