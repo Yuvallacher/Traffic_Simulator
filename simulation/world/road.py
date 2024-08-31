@@ -5,7 +5,7 @@ from pygame.math import Vector2
 from pygame.surface import Surface
 
 class Road:
-    def __init__(self, startingNumberOfLanes : int, allLanesInRoad : list[list['Lane']], laneImages : list[Surface], imagesPositions : list[list[int]], junctions : list['Junction'] = None):
+    def __init__(self, startingNumberOfLanes : int, allLanesInRoad : list[list['Lane']], laneImages : list[Surface], imagesPositions : list[list[int]], junctions : dict[int, 'Junction'] = None):
         self.allLanesInRoad = allLanesInRoad
         self.numberOfDirections = len(allLanesInRoad)
         self.currNumOfLanes = startingNumberOfLanes
@@ -26,8 +26,8 @@ class Road:
             return path[-1]
     
     
-    def get_junction_id(self, junctionIndex : int) -> int:
-        return self.junctions[junctionIndex].id
+    # def get_junction_id(self, junctionIndex : int) -> int:
+    #     return self.junctions[junctionIndex].id
 
     
     def is_start_of_junction(self, targetPosition : Vector2, sourceDirectionIndex : int) -> list[bool, dict, int]:
@@ -35,37 +35,37 @@ class Road:
         check if a given target position is the start of a junction. if so - return True and the path-options for the vehicle that asked
         """
         if self.junctions is not None:
-            for junction in self.junctions:
+            for junction in self.junctions.values():
                 if junction.paths.get(str(sourceDirectionIndex)) is not None:
                     for key in junction.paths[str(sourceDirectionIndex)].keys():
                         if Vector2(junction.paths[str(sourceDirectionIndex)][key][1][0]) == targetPosition:
-                            return True, junction.paths[str(sourceDirectionIndex)], self.junctions.index(junction)
+                            return True, junction.paths[str(sourceDirectionIndex)], junction.id
         return False, None, -1
     
     
-    def get_target_position_junction(self, junctionIndex : int, sourceDirectionIndex : int, destRoadIndex : str, destDirectionIndex : str, currentTargetPositionIndex : int) -> Vector2:
+    def get_target_position_junction(self, junctionID : int, sourceDirectionIndex : int, destRoadIndex : str, destDirectionIndex : str, currentTargetPositionIndex : int) -> Vector2:
         """
         while in a junction, check for the next target position
         """
         destChoiceIndex = f"[{destRoadIndex},{destDirectionIndex}]"
-        path = self.junctions[junctionIndex].paths[str(sourceDirectionIndex)][destChoiceIndex][1]
+        path = self.junctions[junctionID].paths[str(sourceDirectionIndex)][destChoiceIndex][1]
         if currentTargetPositionIndex + 1 < len(path):
             return path[currentTargetPositionIndex] 
         else:
             return path[-1]
     
     
-    def get_junction_path(self,  junctionIndex : int, sourceDirectionIndex : int, destRoadIndex : str, destDirectionIndex : str) -> list[Vector2]:
+    def get_junction_path(self,  junctionID : int, sourceDirectionIndex : int, destRoadIndex : str, destDirectionIndex : str) -> list[Vector2]:
         destChoiceIndex = f"[{destRoadIndex},{destDirectionIndex}]"
-        path = self.junctions[junctionIndex].paths[str(sourceDirectionIndex)][destChoiceIndex][1]
+        path = self.junctions[junctionID].paths[str(sourceDirectionIndex)][destChoiceIndex][1]
         return path
         
     
-    def is_end_of_junction(self, targetPosition : Vector2, junctionIndex : int, sourceDirectionIndex : int, destRoadIndex : str, destDirectionIndex : str) -> list[bool, int]:
+    def is_end_of_junction(self, targetPosition : Vector2, junctionID : int, sourceDirectionIndex : int, destRoadIndex : str, destDirectionIndex : str) -> list[bool, int]:
         destChoiceIndex = f"[{destRoadIndex},{destDirectionIndex}]"
-        path = self.junctions[junctionIndex].paths[str(sourceDirectionIndex)][destChoiceIndex][1]
+        path = self.junctions[junctionID].paths[str(sourceDirectionIndex)][destChoiceIndex][1]
         if targetPosition == path[-1]:
-            return True, self.junctions[junctionIndex].paths[str(sourceDirectionIndex)][destChoiceIndex][0]
+            return True, self.junctions[junctionID].paths[str(sourceDirectionIndex)][destChoiceIndex][0]
         return False, -1
     
     
@@ -94,11 +94,13 @@ class Road:
             return 0
     
     
-    def update_road_and_direction_priority(self, junctionIndex : int, roadIndex : int, directionIndex : int, priority : int):
-        self.junctions[junctionIndex].priorities[(str(roadIndex), str(directionIndex))] = priority if priority >= 1 and priority <= 2 else 2
+    def update_road_and_direction_priority(self, junctionID : int, roadIndex : int, directionIndex : int, priority : int):
+        self.junctions[junctionID].priorities[(str(roadIndex), str(directionIndex))] = priority if priority >= 1 and priority <= 2 else 2
+    
+    
     # === Added ===
-    def is_first_in_junction_queue(self, junctionIndex : int, vehicleId : int):
-        if self.junctions[junctionIndex].check_queue_position(vehicleId) == 0:
+    def is_first_in_junction_queue(self, junctionID : int, vehicleId : int):
+        if self.junctions[junctionID].check_queue_position(vehicleId) == 0:
             return True
         return False
     
@@ -121,13 +123,15 @@ class Road:
         def initiate_priorities(self, roadIndex):
             for directionIndex in self.paths.keys():
                 self.priorities[(roadIndex, directionIndex)] = 2
+        
         # === Added ===
         def add_to_queue(self, vehicleId : int):
             self.queue.append(vehicleId)
 
         def remove_from_queue(self, vehicleId : int): 
             if len(self.queue) > 0:   
-                self.queue.pop(0)
+                self.queue.remove(vehicleId)
+                
         def check_queue_position(self, vehicleId : int):
             if vehicleId in self.queue:
                 return self.queue.index(vehicleId)
@@ -230,29 +234,29 @@ class RoadBuilder:
 
     
     @staticmethod
-    def read_junctions_from_json(data) -> list[Road.Junction]:
+    def read_junctions_from_json(data) -> dict[int, Road.Junction]:
         """
             parses json to return list of junction dicts
         """
-        junctionList : list[Road.Junction] = []
+        junctionDict : dict[int, Road.Junction] = {}
         
         for id, key in enumerate(data["junction_road"]["junctions"].keys()):
-            junctionList.append(Road.Junction(data["junction_road"]["junctions"][key], id))
+            junctionDict[id] = (Road.Junction(data["junction_road"]["junctions"][key], id))
                        
-        return junctionList
+        return junctionDict
     
     
     @staticmethod
-    def get_relevant_junction_info(junctions : list[Road.Junction], roadIndex : int) -> list[Road.Junction]:
+    def get_relevant_junction_info(junctions : dict[int, Road.Junction], roadIndex : int) -> dict[int, Road.Junction]:
         """
         take only the junction-paths that involve the specific road in question
         """
-        relevantJunctions = []
-        for junction in junctions:
+        relevantJunctions : dict[int, Road.Junction] = {}
+        for junction in junctions.values():
             for key in junction.paths.keys():
                 if str(roadIndex) == key:
                     relevantJunction = Road.Junction(junction.paths[key], junction.id)
                     relevantJunction.initiate_priorities(key)
-                    relevantJunctions.append(relevantJunction)
+                    relevantJunctions[junction.id] = relevantJunction
         
         return relevantJunctions

@@ -27,7 +27,7 @@ class VehiclesManager:
         adds at most one new vehicle for each lane
         """
         allRoads = simulationWorld.roads
-        for roadIndex,road in enumerate(allRoads):
+        for roadIndex, road in enumerate(allRoads):
             allLanesInRoad = road.allLanesInRoad
             for direction in allLanesInRoad:
                 for lane in direction:
@@ -37,7 +37,7 @@ class VehiclesManager:
                                 space_available = True
                                 for vehicle in self.vehicles:
                                     if vehicle.roadIndex == roadIndex and vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.currentLaneIndex == direction.index(lane):
-                                        if vehicle.targetPositionIndex <= 6:
+                                        if vehicle.targetPositionIndex <= World.SPAWN_RATE:
                                             space_available = False
                                             break
                                 if space_available:

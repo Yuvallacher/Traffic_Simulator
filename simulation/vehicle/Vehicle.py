@@ -50,7 +50,7 @@ class Vehicle:
         self.desiredJunctionRoadIndex = self.roadIndex
         self.desiredJunctionsDirectionIndex = self.directionIndex
         self.turnDirection : str = ""
-        self.junctionIndex : int = None
+        self.junctionID : int = None
         self.inAccident = False
         self.accident : Accident = None
         self.shouldSwitchLane = False
@@ -120,36 +120,32 @@ class Vehicle:
                 self.switch_lane(allHazards['vehicle_ahead'], allHazards['vehicles_left'], allHazards['vehicles_right'], road, allHazards['vehicles_front'])
             
             nextTargetPosition = road.get_target_position(self.directionIndex, self.desiredLaneIndex, self.targetPositionIndex + 1)
-            startOfJunction, pathOptions, self.junctionIndex = road.is_start_of_junction(nextTargetPosition, self.directionIndex)
+            startOfJunction, pathOptions, self.junctionID = road.is_start_of_junction(nextTargetPosition, self.directionIndex)
             if startOfJunction:
                 self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.turnDirection = self.draw_desired_junction_path(pathOptions)
-                # self.targetPositionIndex = 0
                 self.junctionTargetPositionIndex = 0
                 self.inJunction = True 
-                # === Added ===
-                # TODO implement check if entered vehicle has same destination as me. if so ill wait
-                road.junctions[self.junctionIndex].add_to_queue(self.id)
+                road.junctions[self.junctionID].add_to_queue(self.id)
                 self.set_desired_speed(40)
                
         if self.inJunction:
             if self.enterJunction:
-                nextTargetPosition = road.get_target_position_junction(self.junctionIndex, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.junctionTargetPositionIndex + 1)
-                endOfJunction, targetPositionIndex = road.is_end_of_junction(nextTargetPosition, self.junctionIndex, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex)
+                nextTargetPosition = road.get_target_position_junction(self.junctionID, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.junctionTargetPositionIndex + 1)
+                nextTargetPosition2 = road.get_target_position_junction(self.junctionID, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.junctionTargetPositionIndex + 2)
+                endOfJunction, targetPositionIndex = road.is_end_of_junction(nextTargetPosition2, self.junctionID, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex)
                 if endOfJunction:
-                    # === Added ===
-                    road.junctions[self.junctionIndex].remove_from_queue(self.id)
+                    road.junctions[self.junctionID].remove_from_queue(self.id)
                     self.inJunction = False
                     self.enterJunction = False
+                    self.junctionID = None
                     self.targetPositionIndex = targetPositionIndex
                     self.roadIndex = int(self.desiredJunctionRoadIndex)
                     self.directionIndex = int(self.desiredJunctionsDirectionIndex)
                     self.set_desired_speed(world.MAX_SPEED)
             else:
                 self.enterJunction = self.can_enter_junction(allHazards['vehicles_front'], allHazards['vehicles_right'], allHazards['vehicles_left'], self.turnDirection, road, world.roads)
-                #if self.enterJunction == True:
-                nextTargetPosition = road.get_target_position_junction(self.junctionIndex, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.junctionTargetPositionIndex)
-                # self.accelerate_and_break(self.decelerate_to_stop(20, self.speed)) 
-                self.speed = 0 #DELETEEEEEEEE
+                nextTargetPosition = road.get_target_position_junction(self.junctionID, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.junctionTargetPositionIndex)
+                self.speed = 0 #TODO cahnge to a more gradient stop
         
         self.update_vehicle_location(nextTargetPosition, self.speed) 
         
@@ -254,7 +250,7 @@ class Vehicle:
         else: # turnDirection == "L"
             samePriority = self.check_right_of_way([rightFOV, frontFOV], road, "==", allRoads)
             lowerPriority = self.check_right_of_way([rightFOV, frontFOV, leftFOV], road, "<", allRoads)
-            rightOfWay = (samePriority or road.is_first_in_junction_queue(self.junctionIndex, self.id)) and lowerPriority 
+            rightOfWay = (samePriority or road.is_first_in_junction_queue(self.junctionID, self.id)) and lowerPriority 
         return rightOfWay 
     
     
@@ -263,14 +259,13 @@ class Vehicle:
         Check right-of-way in one case - either a vehicle has higher priority or it doesn't, according to given method parameters
         """
         haveRightOfWay = True
-        junctionID = road.junctions[self.junctionIndex].id
-        priority = road.check_road_and_direction_priority(self.junctionIndex, self.roadIndex, self.directionIndex)
-        junctionPath = road.get_junction_path(self.junctionIndex, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex)
+        priority = road.check_road_and_direction_priority(self.junctionID, self.roadIndex, self.directionIndex)
+        junctionPath = road.get_junction_path(self.junctionID, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex)
         for fov in FOVs:
             if not haveRightOfWay:
                 break
             for vehicle in fov:
-                if not self.check_priority_condition(sign, priority, vehicle, allRoads, junctionID, junctionPath):
+                if not self.check_priority_condition(sign, priority, vehicle, allRoads, self.junctionID, junctionPath):
                     haveRightOfWay = False
                     break         
         return haveRightOfWay
@@ -280,13 +275,12 @@ class Vehicle:
         """
         Checks a vehicle's right-of-way status compared to a specific vehicle
         """
-        # for otherVehicleJunctionIndex in range(len(allRoads[otherVehicle.roadIndex].junctions)):
-        if otherVehicle.junctionIndex is not None:
-            if junctionID == allRoads[otherVehicle.roadIndex].get_junction_id(otherVehicle.junctionIndex):
-                otherVehiclePriority = allRoads[otherVehicle.roadIndex].check_road_and_direction_priority(otherVehicle.junctionIndex, otherVehicle.roadIndex, otherVehicle.directionIndex)
-                if otherVehicle.distance_to_junction(otherVehicle.junctionIndex, allRoads[otherVehicle.roadIndex]) < 3:
+        if otherVehicle.junctionID is not None:
+            if junctionID == otherVehicle.junctionID:
+                otherVehiclePriority = allRoads[otherVehicle.roadIndex].check_road_and_direction_priority(otherVehicle.junctionID, otherVehicle.roadIndex, otherVehicle.directionIndex)
+                if otherVehicle.distance_to_junction(otherVehicle.junctionID, allRoads[otherVehicle.roadIndex]) < 3:
                     if otherVehicle.enterJunction:
-                        otherVehicleJunctionPath = allRoads[otherVehicle.roadIndex].get_junction_path(otherVehicle.junctionIndex, otherVehicle.directionIndex, otherVehicle.desiredJunctionRoadIndex, otherVehicle.desiredJunctionsDirectionIndex)
+                        otherVehicleJunctionPath = allRoads[otherVehicle.roadIndex].get_junction_path(otherVehicle.junctionID, otherVehicle.directionIndex, otherVehicle.desiredJunctionRoadIndex, otherVehicle.desiredJunctionsDirectionIndex)
                         if self.are_paths_colliding(junctionPath, otherVehicleJunctionPath):
                             return False
                     if sign == "<" and priority < otherVehiclePriority:
@@ -301,43 +295,15 @@ class Vehicle:
         """
         Checks if 2 lanes within the same junction cross each-other
         """
-        for point1 in vehicle1Path:
-            for point2 in vehicle2Path:
-                if Vector2(point1).distance_to(Vector2(point2)) <= 15:
-                    return True
+        if vehicle1Path[0] != vehicle2Path[0]:
+            for point1 in vehicle1Path:
+                for point2 in vehicle2Path:
+                    if Vector2(point1).distance_to(Vector2(point2)) <= 15:
+                        return True
         return False
-    
-    # def check_right_of_way(self, FOVs : list[list['Vehicle']], road : Road, sign : str, allRoads : list[Road]) -> bool:
-    #     haveRightOfWay = True
-    #     junctionID = road.junctions[self.junctionIndex].id
-    #     priority = road.check_road_and_direction_priority(self.junctionIndex, self.roadIndex, self.directionIndex)
-    #     for fov in FOVs:
-    #         for vehicle in fov:
-    #             if not haveRightOfWay:
-    #                 break
-    #             if sign == "<":
-    #                 # if (priority < road.check_road_and_direction_priority(junctionIndex, vehicle.roadIndex, vehicle.directionIndex)):
-    #                 for otherVehicleJunctionIndex in range(len(allRoads[vehicle.roadIndex].junctions)):
-    #                     if  junctionID == allRoads[vehicle.roadIndex].junctions[otherVehicleJunctionIndex].id:
-    #                         if (priority < allRoads[vehicle.roadIndex].check_road_and_direction_priority(otherVehicleJunctionIndex, vehicle.roadIndex, vehicle.directionIndex)):
-    #                             if vehicle.distance_to_junction(otherVehicleJunctionIndex, allRoads[vehicle.roadIndex]) < 3:
-    #                             # if vehicle.inJunction:
-    #                                 haveRightOfWay = False
-    #                                 break
-    #             elif sign == "==":
-    #                 # if (priority == road.check_road_and_direction_priority(junctionIndex, vehicle.roadIndex, vehicle.directionIndex)):
-    #                 for otherVehicleJunctionIndex in range(len(allRoads[vehicle.roadIndex].junctions)):
-    #                     if junctionID == allRoads[vehicle.roadIndex].junctions[otherVehicleJunctionIndex].id:
-    #                         if (priority == allRoads[vehicle.roadIndex].check_road_and_direction_priority(otherVehicleJunctionIndex, vehicle.roadIndex, vehicle.directionIndex)):
-    #                             if vehicle.distance_to_junction(otherVehicleJunctionIndex, allRoads[vehicle.roadIndex]) < 3:
-    #                             # if vehicle.inJunction:
-    #                                 haveRightOfWay = False
-    #                                 break
-    #     return haveRightOfWay
-                    
+                        
     
     def distance_to_junction(self, junctionIndex : int, road : Road) -> float:
-        # if self.inJunction:
         if self.enterJunction:    
             return 0
         else:
@@ -347,7 +313,6 @@ class Vehicle:
                 if startOfJunction and myJunctionIndex == junctionIndex:
                     return i
             return float('inf')
-            
     
     
     def draw_desired_junction_path(self, pathOptions : dict) -> list[str, str, str]:
@@ -533,11 +498,6 @@ class Vehicle:
         surroundings['vehicle_ahead'] = None
         surroundings['hazards_ahead'] = []
       
-        # targetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex)
-        # # if (not self.inJunction and self.targetPositionIndex <= 1) or targetPosition == self.location:
-        # if (self.targetPositionIndex <= 1) or targetPosition == self.location:
-        # # if targetPosition == self.location:
-        #     return surroundings
         direction = Vector2(1, 0).rotate(-self.driveAngle)
         frontFov = self.create_fov_boundary(direction, -45, 45, 200)
         if self.inJunction:
@@ -561,14 +521,14 @@ class Vehicle:
                     surroundings['vehicles_right'].append(otherVehicle)
             
         # drawings of fovs - DELETE LATER
-        line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + frontFov[0]), 1)
-        line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + frontFov[1]), 1)
+        # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + frontFov[0]), 1)
+        # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + frontFov[1]), 1)
         
-        line(self.screen, (0, 0, 255), self.rightEdgeOfVehicle, (self.rightEdgeOfVehicle + rightSideFov[0]), 1)
-        line(self.screen, (0, 0, 255), self.rightEdgeOfVehicle, (self.rightEdgeOfVehicle + rightSideFov[1]), 1)
+        # line(self.screen, (0, 0, 255), self.rightEdgeOfVehicle, (self.rightEdgeOfVehicle + rightSideFov[0]), 1)
+        # line(self.screen, (0, 0, 255), self.rightEdgeOfVehicle, (self.rightEdgeOfVehicle + rightSideFov[1]), 1)
         
-        line(self.screen, (0, 255, 0), self.leftEdgeOfVehicle, (self.leftEdgeOfVehicle + leftSideFov[0]), 1)
-        line(self.screen, (0, 255, 0), self.leftEdgeOfVehicle, (self.leftEdgeOfVehicle + leftSideFov[1]), 1)
+        # line(self.screen, (0, 255, 0), self.leftEdgeOfVehicle, (self.leftEdgeOfVehicle + leftSideFov[0]), 1)
+        # line(self.screen, (0, 255, 0), self.leftEdgeOfVehicle, (self.leftEdgeOfVehicle + leftSideFov[1]), 1)
         
         #drawing corners of vehicle - DELETE LATER
         # line(self.screen, (255, 255, 0), self.backRightCorner, self.backLeftCorner, 1)

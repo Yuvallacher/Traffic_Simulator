@@ -26,18 +26,50 @@ class DataManager:
     def update_stats(self, vehicles):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         total_speed, count = 0, 0
+        road_direction_stats = {}
+
         for vehicle in vehicles:
             if not vehicle.inAccident:
-                total_speed += PixelsConverter.convert_pixels_per_frames_to_speed(vehicle.speed)
+                speed = PixelsConverter.convert_pixels_per_frames_to_speed(vehicle.speed)
+                total_speed += speed
                 count += 1
+                key = (vehicle.roadIndex, vehicle.directionIndex)
+                if key not in road_direction_stats:
+                    road_direction_stats[key] = {'total_speed': 0, 'count': 0}
+
+                road_direction_stats[key]['total_speed'] += speed
+                road_direction_stats[key]['count'] += 1
 
         avg_speed = total_speed / count if count > 0 else 0
+        avg_speeds_per_road_direction = {
+            f'Avg. Speed (Road {road}, Direction {direction})': (stats['total_speed'] / stats['count'] if stats['count'] > 0 else 0)
+            for (road, direction), stats in road_direction_stats.items()
+        }
+
         new_data = pd.DataFrame({
             'Time Stamp': [current_time],
             'Average Speed': [avg_speed],
-            'Density': [count]
+            'Density': [count],
+            **avg_speeds_per_road_direction  # Add the dynamic stats
         })
+
         self.stats_data = pd.concat([self.stats_data, new_data], ignore_index=True)
+        
+    # def update_stats(self, vehicles):
+    #     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    #     total_speed, count = 0, 0
+    #     for vehicle in vehicles:
+    #         if not vehicle.inAccident:
+    #             total_speed += PixelsConverter.convert_pixels_per_frames_to_speed(vehicle.speed)
+    #             count += 1
+
+    #     avg_speed = total_speed / count if count > 0 else 0
+    #     new_data = pd.DataFrame({
+    #         'Time Stamp': [current_time],
+    #         'Average Speed': [avg_speed],
+    #         'Density': [count]
+    #     })
+    #     self.stats_data = pd.concat([self.stats_data, new_data], ignore_index=True)
 
     def log_accident(self, vehicle_1_Type : str, vehicle_2_Type : str, vehicle_1_Speed : float, vehicle_2_Speed : float, accidentID : int):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
