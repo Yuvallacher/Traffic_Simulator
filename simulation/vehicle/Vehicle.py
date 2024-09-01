@@ -106,7 +106,7 @@ class Vehicle:
         """
         compute and execute the next decision based on the surroindings
         """
-        acceleration = self.calculate_acceleration(allHazards, world.POLITENESS)
+        acceleration = self.calculate_acceleration(allHazards, world.POLITENESS, world.FPS)
         self.accelerate_and_break(acceleration)
         
         if not self.inJunction:
@@ -154,34 +154,34 @@ class Vehicle:
         return vehicleAhead is not None, len(hazardsAhead) != 0
     
     
-    def calculate_acceleration(self, allHazards : dict, politeness : int) -> float:
+    def calculate_acceleration(self, allHazards : dict, politeness : int, fps : int) -> float:
         isVehicleAhead, isHazardAhead = self.get_clear_road_status(allHazards['vehicle_ahead'], allHazards['hazards_ahead'])
         if not isVehicleAhead and not isHazardAhead:
-            acceleration = self.acceleration_for_clear_road()
+            acceleration = self.acceleration_for_clear_road(fps)
         elif isVehicleAhead and not isHazardAhead:
-            acceleration = self.acceleration_for_only_vehicle_ahead(allHazards['vehicle_ahead'], politeness)
+            acceleration = self.acceleration_for_only_vehicle_ahead(allHazards['vehicle_ahead'], politeness, fps)
         elif not isVehicleAhead and isHazardAhead:
-            acceleration = self.acceleration_for_only_hazard_ahead(allHazards['hazards_ahead'])
+            acceleration = self.acceleration_for_only_hazard_ahead(allHazards['hazards_ahead'], fps)
         else: # isVehicleAhead and isHazardAhead
-            acceleration = self.acceleration_for_vehicle_and_hazard(allHazards['vehicle_ahead'], allHazards['hazards_ahead'], politeness)
+            acceleration = self.acceleration_for_vehicle_and_hazard(allHazards['vehicle_ahead'], allHazards['hazards_ahead'], politeness, fps)
         return acceleration
     
     
-    def acceleration_for_clear_road(self) -> float:
+    def acceleration_for_clear_road(self, fps : int) -> float:
         comfortableDeceleration = 3
         maxAcceleration = 2  
         accelerationFactor = maxAcceleration / self.weight
         
         accelerationSpeed = PixelsConverter.convert_speed_to_pixels_per_frames(accelerationFactor)
         if self.speed > self.desiredSpeed:
-            return -comfortableDeceleration * 0.0167
+            return -comfortableDeceleration / fps
         elif self.speed + accelerationSpeed <= self.desiredSpeed:
             return accelerationSpeed
         else:
             return (self.desiredSpeed - self.speed) 
     
 
-    def acceleration_for_only_vehicle_ahead(self, vehicleAhead : 'Vehicle', politeness : int) -> float:
+    def acceleration_for_only_vehicle_ahead(self, vehicleAhead : 'Vehicle', politeness : int, fps : int) -> float:
         minimalDistance = 10 + politeness * 3
         comfortableDeceleration = 3 
         maxAcceleration = 2  
@@ -200,33 +200,33 @@ class Vehicle:
             if distanceToVehicleAhead < 0.65 * safeStoppingDistance:
                 acceleration -= 0.5 * comfortableDeceleration
 
-        return acceleration * 0.0167
+        return acceleration / fps
         
     
-    def acceleration_for_only_hazard_ahead(self, hazardsAhead : list[Hazard]) -> float:
+    def acceleration_for_only_hazard_ahead(self, hazardsAhead : list[Hazard], fps : int) -> float:
         closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
         acceleration = closestHazard.affect_vehicle(self, distanceToHazardAhead)
         if (closestHazard.type == 'speedLimit') or (closestHazard.type == 'trafficLight' and closestHazard.attributes["isGreenLight"]): #TODO think about yellow light
-            acceleration = self.acceleration_for_clear_road()
+            acceleration = self.acceleration_for_clear_road(fps)
         if closestHazard.type == 'stopSign' or (closestHazard.type == 'trafficLight' and closestHazard.attributes["isRedLight"]): #TODO think about yellow light:
             if distanceToHazardAhead > 40:
-                acceleration = self.acceleration_for_clear_road()
+                acceleration = self.acceleration_for_clear_road(fps)
         hazardCompletionStatus = closestHazard.check_hazard_rule_completion(self, distanceToHazardAhead)
         self.update_encountered_hazard_status(closestHazard.id, hazardCompletionStatus)
         return acceleration
     
     
-    def acceleration_for_vehicle_and_hazard(self, vehicleAhead : 'Vehicle', hazardsAhead : list[Hazard], politeness : int) -> float:
+    def acceleration_for_vehicle_and_hazard(self, vehicleAhead : 'Vehicle', hazardsAhead : list[Hazard], politeness : int, fps : int) -> float:
         closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
         if closestHazard.priority == 1:
-            self.acceleration_for_only_hazard_ahead(hazardsAhead)
-            acceleration = self.acceleration_for_only_vehicle_ahead(vehicleAhead, politeness)
+            self.acceleration_for_only_hazard_ahead(hazardsAhead, fps)
+            acceleration = self.acceleration_for_only_vehicle_ahead(vehicleAhead, politeness, fps)
         else:
             distanceToVehicleAhead = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
             if distanceToHazardAhead < distanceToVehicleAhead:
-                acceleration = self.acceleration_for_only_hazard_ahead(hazardsAhead)
+                acceleration = self.acceleration_for_only_hazard_ahead(hazardsAhead, fps)
             else:
-                acceleration = self.acceleration_for_only_vehicle_ahead(vehicleAhead, politeness)
+                acceleration = self.acceleration_for_only_vehicle_ahead(vehicleAhead, politeness, fps)
         return acceleration
     
     
