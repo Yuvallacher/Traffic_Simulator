@@ -55,6 +55,7 @@ while simulationWorld.simulationRunning:
         del simulationWorld.accidentManager.allAccidents[key]
     
     pygame.display.update()
+    # pygame.display.flip()
     simulationWorld.clock.tick(simulationWorld.FPS)
 
 pygame.quit()
