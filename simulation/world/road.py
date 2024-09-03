@@ -5,13 +5,14 @@ from pygame.math import Vector2
 from pygame.surface import Surface
 
 class Road:
-    def __init__(self, startingNumberOfLanes : int, allLanesInRoad : list[list['Lane']], laneImages : list[Surface], imagesPositions : list[list[int]], junctions : dict[int, 'Junction'] = None):
+    def __init__(self, startingNumberOfLanes : int, allLanesInRoad : list[list['Lane']], laneImages : list[Surface], imagesPositions : list[list[int]], junctions : dict[int, 'Junction'] = None, roundabouts : dict[int, 'Roundabout'] = None):
         self.allLanesInRoad = allLanesInRoad
         self.numberOfDirections = len(allLanesInRoad)
         self.currNumOfLanes = startingNumberOfLanes
         self.laneImages = laneImages
         self.imagesPositions = imagesPositions
         self.junctions = junctions
+        self.roundabouts = roundabouts
  
         
         
@@ -103,6 +104,60 @@ class Road:
         if self.junctions[junctionID].check_queue_position(vehicleId) == 0:
             return True
         return False
+
+
+    def is_roundabout_entry_point(self, targetPosition : Vector2, sourceDirectionIndex : int) -> list[bool, int]:
+        if self.roundabouts is not None:
+            for roundabout in self.roundabouts.values():
+                if roundabout.entryPaths[str(sourceDirectionIndex)][1][0] == targetPosition:
+                    return (True, roundabout.id)
+        return (False , None)
+    
+    def get_roundabout_entry_target_position(self, targetPositionIndex : int, roundaboutId : int, sourceDirectionIndex : int) -> Vector2:
+        entryPathTurnCoordinates = self.roundabouts[roundaboutId].entryPaths[str(sourceDirectionIndex)][1] # Coordinates of the turn
+        if targetPositionIndex + 1 == len(entryPathTurnCoordinates):
+            return entryPathTurnCoordinates[-1]
+        else:
+            return entryPathTurnCoordinates[targetPositionIndex]
+
+    def is_finished_entering_roundabout(self, targetPosition : Vector2, roundaboutId : int, sourceDirectionIndex : int) -> bool:
+        entryPathTurnCoordinates = self.roundabouts[roundaboutId].entryPaths[str(sourceDirectionIndex)][1] # Coordinates of the turn
+        if targetPosition == entryPathTurnCoordinates[-1]:
+            return True
+        return False
+    
+    def get_roundabout_entering_index(self, roundaboutId : int, sourceDirectionIndex : int) -> int:
+        return self.roundabouts[roundaboutId].entryPaths[str(sourceDirectionIndex)][0]
+    
+    def get_next_target_position_of_roundabout_path(self, roundaboutId : int, targetPositionIndex) -> Vector2:
+        path = self.roundabouts[roundaboutId].path
+        pathSize = len(self.roundabouts[roundaboutId].path)
+        return Vector2(path[targetPositionIndex % pathSize - 1])
+
+    def is_desired_roundabout_exit_point(self, roundaboutId : int, targetPosition : Vector2, desiredRoadIndex : int, desiredDirectionIndex : int) -> bool:
+        desiredPath = f"[{desiredRoadIndex},{desiredDirectionIndex}]"
+        if targetPosition == self.roundabouts[roundaboutId].exitPaths[desiredPath][1][0]:
+            return True
+        return False
+
+    def get_next_target_position_of_roundabout_exit(self, roundaboutId : int, targetPositionIndex, desiredRoadIndex, desiredDirectionIndex) -> Vector2:
+        desiredPathIndexes = f"[{desiredRoadIndex},{desiredDirectionIndex}]"
+        exitPath = self.roundabouts[roundaboutId].exitPaths[desiredPathIndexes][1]
+        if targetPositionIndex + 1 == len(exitPath):
+             return exitPath[-1]
+        else:
+            return exitPath[targetPositionIndex]
+
+    def is_end_of_roundabout_exit(self, roundaboutId : int, targetPosition: Vector2, desiredRoadIndex, desiredDirectionIndex) -> bool:
+        desiredPathIndexes = f"[{desiredRoadIndex},{desiredDirectionIndex}]"
+        exitPath = self.roundabouts[roundaboutId].exitPaths[desiredPathIndexes][1]
+        if targetPosition == exitPath[-1]:
+            return True
+        return False
+    
+    def get_roundabout_to_road_index(self, roundaboutId : int, desiredRoadIndex, desiredDirectionIndex) -> int:
+        desiredPathIndexes = f"[{desiredRoadIndex},{desiredDirectionIndex}]"
+        return self.roundabouts[roundaboutId].exitPaths[desiredPathIndexes][2]
     
     #======== class Lane ========#
     class Lane:
@@ -136,8 +191,14 @@ class Road:
             if vehicleId in self.queue:
                 return self.queue.index(vehicleId)
             return -1
-                    
 
+    #======== class Junction ========#
+    class Roundabout:
+        def __init__(self, path : list[Vector2], entryPaths : dict, exitPaths : dict,  id : int):
+            self.path = path
+            self.entryPaths = entryPaths
+            self.exitPaths = exitPaths
+            self.id = id
 
 class RoadBuilder:
     @staticmethod
@@ -146,6 +207,8 @@ class RoadBuilder:
             roads = RoadBuilder.straight_road_read_lanes_from_file(startingNumberOfLanes)
         elif 'junction' in roadName:
             roads = RoadBuilder.junction_road_read_lanes_from_file(startingNumberOfLanes, roadName)
+        elif 'roundabout' in roadName:
+            roads = RoadBuilder.roundabout_road_read_lanes_from_file(startingNumberOfLanes, roadName)    
         
      
         return roads
@@ -209,7 +272,7 @@ class RoadBuilder:
             # imagesPos = roadData["image_pos"]
             images, imagesPos = RoadBuilder.load_lane_images(roadData)
             
-            junctions = RoadBuilder.read_junctions_from_json(data)
+            junctions = RoadBuilder.read_junctions_from_json(roadData)
             roadIndex = 0
             #TODO add a way to limit user - only 1 or 2 lanes in each direction           
             for idx, lane_coordinates in enumerate(lanesData):
@@ -233,18 +296,30 @@ class RoadBuilder:
             return roadsList  
 
     
+    # @staticmethod
+    # def read_junctions_from_json(data) -> dict[int, Road.Junction]:
+    #     """
+    #         parses json to return list of junction dicts
+    #     """
+    #     junctionDict : dict[int, Road.Junction] = {}
+        
+    #     for id, key in enumerate(data["junction_road"]["junctions"].keys()):
+    #         junctionDict[id] = (Road.Junction(data["junction_road"]["junctions"][key], id))
+                       
+    #     return junctionDict
+    
     @staticmethod
-    def read_junctions_from_json(data) -> dict[int, Road.Junction]:
+    def read_junctions_from_json(roadData) -> dict[int, Road.Junction]:
         """
             parses json to return list of junction dicts
         """
         junctionDict : dict[int, Road.Junction] = {}
         
-        for id, key in enumerate(data["junction_road"]["junctions"].keys()):
-            junctionDict[id] = (Road.Junction(data["junction_road"]["junctions"][key], id))
+        for id, key in enumerate(roadData["junctions"].keys()):
+            junctionDict[id] = (Road.Junction(roadData["junctions"][key], id))
                        
         return junctionDict
-    
+
     
     @staticmethod
     def get_relevant_junction_info(junctions : dict[int, Road.Junction], roadIndex : int) -> dict[int, Road.Junction]:
@@ -260,3 +335,52 @@ class RoadBuilder:
                     relevantJunctions[junction.id] = relevantJunction
         
         return relevantJunctions
+    
+    @staticmethod
+    def roundabout_road_read_lanes_from_file(startingNumberOfLanes : int, roadName : str) -> list[Road]:
+         with open("jsons\\road.json", 'r') as file:
+            
+            data = json.load(file)
+            roadsList = []
+            roadData = data['roundabout_road']
+            lanesData = roadData['lanes']   
+            lanesDirection1 = []
+            lanesDirection2 = []
+            roundaboutData = roadData['roundabouts']
+            images, imagesPos = RoadBuilder.load_lane_images(roadData)
+            
+            junctions = RoadBuilder.read_junctions_from_json(roadData)
+            roadIndex = 0
+            #TODO add a way to limit user - only 1 or 2 lanes in each direction           
+            for idx, lane_coordinates in enumerate(lanesData):
+                path = [Vector2(coord) for coord in lane_coordinates]
+                spawnPoint = False if idx == 5 else True
+                lane = Road.Lane(path, spawnPoint)
+
+                if idx % 2 == 0:
+                    lanesDirection1.append(lane)
+                else:
+                    lanesDirection2.append(lane)
+                    
+                    roadDirections = [lanesDirection1, lanesDirection2]
+                    relevantJunctions = RoadBuilder.get_relevant_junction_info(junctions, roadIndex)
+                    relevantRoundabouts = RoadBuilder.create_roundabouts(roundaboutData, roadIndex)
+                    road = Road(startingNumberOfLanes, roadDirections, images, imagesPos, relevantJunctions, relevantRoundabouts)
+                    roadIndex += 1
+                    roadsList.append(road)
+                    lanesDirection1 = []
+                    lanesDirection2 = []
+                    
+            return roadsList
+    
+    @staticmethod
+    def create_roundabouts(roundabouts : dict, roadIndex : int) -> dict[int, Road.Roundabout]:
+        roundaboutsDict = {}
+        for roundaboutId, roundabout in enumerate(roundabouts.values()):
+            if roadIndex in roundabout["roadsIndexes"]:
+                path = roundabout["roundabout_path"]
+                entryPaths = roundabout["entry_paths"]
+                exitPaths = roundabout["exit_paths"]
+                entryDict = entryPaths[str(roadIndex)]
+                roundaboutsDict[roundaboutId] = Road.Roundabout(path, entryDict, exitPaths, roundaboutId)
+        return roundaboutsDict           

@@ -39,7 +39,7 @@ class SpeedLimit(Hazard):
     def affect_vehicle(self, vehicle, distance: float) -> float:
         if distance <= 50:
             vehicle.set_desired_speed(self.attributes["limit"])
-        return -10
+        return -10 # for overide
 
     def check_hazard_rule_completion(self, vehicle, distance : float) -> bool:
         if distance <= 50:
