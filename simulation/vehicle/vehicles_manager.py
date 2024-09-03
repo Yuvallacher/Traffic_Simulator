@@ -49,11 +49,11 @@ class VehiclesManager:
                                     car_probability = random.uniform(0, 1)
                                     if car_probability >= TRUCK_PROBABILITY:
                                         image = VehicleDrawer.get_car_image()
-                                        newVehicle = Car(self.vehicleID, screen, vehicleCoordinates, roadIndex, directionIndex, laneIndex, driveAngle, image, speed=simulationWorld.MAX_SPEED)
+                                        newVehicle = Car(self.vehicleID, screen, vehicleCoordinates, roadIndex, directionIndex, laneIndex, driveAngle, image, speed=simulationWorld.maxSpeed)
                                     else:
                                         image = VehicleDrawer.get_truck_image()
-                                        newVehicle = Truck(self.vehicleID, screen, vehicleCoordinates, roadIndex, directionIndex, laneIndex, driveAngle, image, speed=simulationWorld.MAX_SPEED)
-                                    newVehicle.set_desired_speed(simulationWorld.MAX_SPEED)
+                                        newVehicle = Truck(self.vehicleID, screen, vehicleCoordinates, roadIndex, directionIndex, laneIndex, driveAngle, image, speed=simulationWorld.maxSpeed)
+                                    newVehicle.set_desired_speed(simulationWorld.maxSpeed)
                                     newVehicle.set_politeness(simulationWorld.POLITENESS)
                                     newVehicle.set_awareness(simulationWorld.AWARENESS)
                                     newVehicle.rotate_vehicle() 

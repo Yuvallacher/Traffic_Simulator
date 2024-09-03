@@ -141,7 +141,7 @@ class Vehicle:
                     self.targetPositionIndex = targetPositionIndex
                     self.roadIndex = int(self.desiredJunctionRoadIndex)
                     self.directionIndex = int(self.desiredJunctionsDirectionIndex)
-                    self.set_desired_speed(world.MAX_SPEED)
+                    self.set_desired_speed(world.maxSpeed)
             else:
                 self.enterJunction = self.can_enter_junction(allHazards['vehicles_front'], allHazards['vehicles_right'], allHazards['vehicles_left'], self.turnDirection, road, world.roads)
                 nextTargetPosition = road.get_target_position_junction(self.junctionID, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.junctionTargetPositionIndex)
