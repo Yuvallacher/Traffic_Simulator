@@ -15,7 +15,6 @@ class Road:
         self.roundabouts = roundabouts
  
         
-        
     def get_target_position(self, directionIndex : int, laneIndex : int, currentTargetPositionIndex : int) -> Vector2:
         """
         while NOT in a junction, check for the next target position
@@ -25,10 +24,6 @@ class Road:
             return path[currentTargetPositionIndex] 
         else:
             return path[-1]
-    
-    
-    # def get_junction_id(self, junctionIndex : int) -> int:
-    #     return self.junctions[junctionIndex].id
 
     
     def is_start_of_junction(self, targetPosition : Vector2, sourceDirectionIndex : int) -> list[bool, dict, int]:
@@ -90,14 +85,32 @@ class Road:
     def check_road_and_direction_priority(self, junctionIndex: int, roadIndex: int, directionIndex: int) -> int:
         key = (str(roadIndex), str(directionIndex))
         if key in self.junctions[junctionIndex].priorities:
-            return self.junctions[junctionIndex].priorities[key]
+            if self.junctions[junctionIndex].priorities[key][0] <= 1:
+                return 1
+            else:
+                return 2
         else:
             return 0
     
     
-    def update_road_and_direction_priority(self, junctionID : int, roadIndex : int, directionIndex : int, priority : int):
-        self.junctions[junctionID].priorities[(str(roadIndex), str(directionIndex))] = priority if priority >= 1 and priority <= 2 else 2
+    def update_road_and_direction_priority(self, junctionID : int, roadIndex : int, directionIndex : int, hazardID : int, increase : bool):
+        if increase and hazardID in self.junctions[junctionID].priorities[(str(roadIndex), str(directionIndex))][1]:
+            self.junctions[junctionID].priorities[(str(roadIndex), str(directionIndex))][0] += 1
+            self.junctions[junctionID].priorities[(str(roadIndex), str(directionIndex))][1].remove(hazardID)
+        elif not increase and hazardID not in self.junctions[junctionID].priorities[(str(roadIndex), str(directionIndex))][1]:
+            self.junctions[junctionID].priorities[(str(roadIndex), str(directionIndex))][0] -= 1
+            self.junctions[junctionID].priorities[(str(roadIndex), str(directionIndex))][1].append(hazardID)
     
+    
+    def is_point_part_of_junction(self, coordinate : Vector2) -> bool:
+        if self.junctions is not None:
+            for junction in self.junctions.values():
+                for sourceDirectionIndex in junction.paths.keys():
+                    for destChoiceIndex in junction.paths[sourceDirectionIndex].keys():
+                        path = junction.paths[sourceDirectionIndex][destChoiceIndex][1]
+                        if coordinate in path:
+                            return True
+        return False
     
     # === Added ===
     def is_first_in_junction_queue(self, junctionID : int, vehicleId : int):
@@ -113,6 +126,7 @@ class Road:
                     return (True, roundabout.id)
         return (False , None)
     
+    
     def get_roundabout_entry_target_position(self, targetPositionIndex : int, roundaboutId : int, sourceDirectionIndex : int) -> Vector2:
         entryPathTurnCoordinates = self.roundabouts[roundaboutId].entryPaths[str(sourceDirectionIndex)][1] # Coordinates of the turn
         if targetPositionIndex + 1 == len(entryPathTurnCoordinates):
@@ -120,19 +134,23 @@ class Road:
         else:
             return entryPathTurnCoordinates[targetPositionIndex]
 
+
     def is_turn_integrates_roundabout(self, targetPosition : Vector2, roundaboutId : int, sourceDirectionIndex : int) -> bool:
         entryPathTurnCoordinates = self.roundabouts[roundaboutId].entryPaths[str(sourceDirectionIndex)][1] # Coordinates of the turn
         if targetPosition == entryPathTurnCoordinates[-1]:
             return True
         return False
     
+    
     def get_roundabout_entering_index(self, roundaboutId : int, sourceDirectionIndex : int) -> int:
         return self.roundabouts[roundaboutId].entryPaths[str(sourceDirectionIndex)][0]
+    
     
     def get_next_target_position_of_roundabout_path(self, roundaboutId : int, targetPositionIndex) -> Vector2:
         path = self.roundabouts[roundaboutId].path
         pathSize = len(self.roundabouts[roundaboutId].path)
         return Vector2(path[targetPositionIndex % pathSize - 1])
+
 
     def is_desired_roundabout_exit_point(self, roundaboutId : int, targetPosition : Vector2, desiredRoadIndex : int, desiredDirectionIndex : int) -> bool:
         desiredPath = f"[{desiredRoadIndex},{desiredDirectionIndex}]"
@@ -140,6 +158,7 @@ class Road:
             return True
         return False
 
+    
     def get_next_target_position_of_roundabout_exit(self, roundaboutId : int, targetPositionIndex, desiredRoadIndex, desiredDirectionIndex) -> Vector2:
         desiredPathIndexes = f"[{desiredRoadIndex},{desiredDirectionIndex}]"
         exitPath = self.roundabouts[roundaboutId].exitPaths[desiredPathIndexes][1]
@@ -148,6 +167,7 @@ class Road:
         else:
             return exitPath[targetPositionIndex]
 
+
     def is_end_of_roundabout_exit(self, roundaboutId : int, targetPosition: Vector2, desiredRoadIndex, desiredDirectionIndex) -> bool:
         desiredPathIndexes = f"[{desiredRoadIndex},{desiredDirectionIndex}]"
         exitPath = self.roundabouts[roundaboutId].exitPaths[desiredPathIndexes][1]
@@ -155,10 +175,25 @@ class Road:
             return True
         return False
     
+    
     def get_roundabout_to_road_index(self, roundaboutId : int, desiredRoadIndex, desiredDirectionIndex) -> int:
         desiredPathIndexes = f"[{desiredRoadIndex},{desiredDirectionIndex}]"
         return self.roundabouts[roundaboutId].exitPaths[desiredPathIndexes][2]
     
+    
+    def is_point_part_of_roundabout(self, coordinate : Vector2) -> bool:
+        if self.roundabouts is not None:
+            for roundabout in self.roundabouts.values():
+                roundaboutPath = roundabout.path
+                if coordinate in roundaboutPath:
+                    return True
+                for exitPath in roundabout.exitPaths.values():
+                    if coordinate in exitPath[1]:
+                        return True
+                for entryPath in roundabout.entryPaths.values():
+                    if coordinate in entryPath[1]:
+                        return True
+        return False
     
     
     #======== class Lane ========#
@@ -172,14 +207,14 @@ class Road:
     class Junction:
         def __init__(self, paths : dict, id : int):
             self.paths = paths
-            self.priorities : dict[tuple[str, str], int] = {}
+            self.priorities : dict[tuple[str, str], list[int, list[int]]] = {}
             self.id = id
             # === Added ===
             self.queue = []
         
         def initiate_priorities(self, roadIndex):
             for directionIndex in self.paths.keys():
-                self.priorities[(roadIndex, directionIndex)] = 2
+                self.priorities[(roadIndex, directionIndex)] = [2, []]
         
         # === Added ===
         def add_to_queue(self, vehicleId : int):

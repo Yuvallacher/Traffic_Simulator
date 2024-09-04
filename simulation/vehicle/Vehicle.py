@@ -777,32 +777,18 @@ class Vehicle:
     
     
     def get_closest_high_priority_hazard(self, hazards : list[Hazard]) -> list[Hazard, float]:
-        firstIteration = True
+        distanceToClosestHazard = float('inf')
+        closestHazard = hazards[0]
         for hazard in hazards:
-            if firstIteration:
-                firstIteration = False
+            distanceToCurrentHazard = self.get_distance_to_hazard(hazard)
+            if (hazard.priority > closestHazard.priority) or ((hazard.priority == closestHazard.priority) and (distanceToCurrentHazard < distanceToClosestHazard)):
                 closestHazard = hazard
-                distanceToClosestHazard = self.get_distance_to_hazard(hazard)
-            else:
-                distanceToCurrentHazard = self.get_distance_to_hazard(hazard)
-                if (hazard.priority > closestHazard.priority) or ((hazard.priority == closestHazard.priority) and (distanceToCurrentHazard < distanceToClosestHazard)):
-                    closestHazard = hazard
-                    distanceToClosestHazard = distanceToCurrentHazard
+                distanceToClosestHazard = distanceToCurrentHazard
         return hazard, distanceToClosestHazard
 
 
     def get_distance_to_hazard(self, hazard : Hazard):
-        # rect = hazard.images[0].get_rect(topleft=(hazard.location.x, hazard.location.y))
-        # hazardCorners = [
-        #     (rect.left, rect.top),     # Top-left corner
-        #     (rect.right, rect.top),    # Top-right corner
-        #     (rect.left, rect.bottom),  # Bottom-left corner
-        #     (rect.right, rect.bottom)  # Bottom-right corner
-        # ]
-        # distanceToClosestHazard = min([self.frontEdgeOfVehicle.distance_to(corner) for corner in hazardCorners])
         return self.frontEdgeOfVehicle.distance_to(hazard.lineMidPoint) if hazard.lineMidPoint is not None else float('inf')
-
-    # def get_vehicle_state(self, )
 
 
 

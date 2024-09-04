@@ -18,6 +18,8 @@ class Hazard:
         self.lineStart : Vector2 = None
         self.lineEnd : Vector2 = None
         self.drawLine = False
+        self.nearJunction = False
+        self.junctionID = False
         global id
         self.id = id + 1
         id += 1
@@ -65,7 +67,7 @@ class StopSign(Hazard):
         return vehicle.decelerate_to_stop(distance, vehicle.speed)
 
     def check_hazard_rule_completion(self, vehicle, distance : float) -> bool:
-        return distance <= 40 and vehicle.speed == 0
+        return distance <= 10 and vehicle.speed <= 0.01
 
 
 class TrafficLight(Hazard):
