@@ -2,6 +2,7 @@ from pygame.surface import Surface
 from pygame.math import Vector2
 from abc import ABC, abstractmethod
 
+global id
 id = 0
 class Hazard:
     def __init__(self, type: str, location: Vector2, roadIndex: int, directionIndex: int, images: list[Surface], attributes: dict, priority: int):
@@ -10,8 +11,13 @@ class Hazard:
         self.roadIndex = roadIndex
         self.directionIndex = directionIndex
         self.images = images
+        self.rect = images[0].get_rect(topleft=(location.x, location.y))
         self.attributes = attributes
         self.priority = priority
+        self.lineMidPoint : Vector2 = None
+        self.lineStart : Vector2 = None
+        self.lineEnd : Vector2 = None
+        self.drawLine = False
         global id
         self.id = id + 1
         id += 1
@@ -31,6 +37,10 @@ class Hazard:
         """
         pass
 
+    def set_new_position(self, roadIndex : int, directionIndex : int, coordinate : Vector2):
+        self.location = coordinate
+        self.roadIndex = roadIndex
+        self.directionIndex = directionIndex
 
 class SpeedLimit(Hazard):
     def __init__(self, location: Vector2, roadIndex: int, directionIndex: int, images: list[Surface], speed_limit: int):

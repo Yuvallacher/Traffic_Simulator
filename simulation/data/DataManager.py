@@ -11,17 +11,17 @@
 #         self.export_interval = export_interval
 #         self.stats_data = pd.DataFrame(columns=['Time Stamp', 'Average Speed', 'Density'])
 #         self.accidents_data = pd.DataFrame(columns=['Time Stamp', 'Vehicle Types', 'Speeds At Crash Time (km\h)', 'Accident ID'])
-#         self._start_export_thread()
+#     #     self._start_export_thread()
 
-#     def _start_export_thread(self):
-#         self.export_thread = threading.Thread(target=self._export_data_periodically)
-#         self.export_thread.daemon = True  # Daemonize thread so it automatically dies when main program ends
-#         self.export_thread.start()
+#     # def _start_export_thread(self):
+#     #     self.export_thread = threading.Thread(target=self._export_data_periodically)
+#     #     self.export_thread.daemon = True  # Daemonize thread so it automatically dies when main program ends
+#     #     self.export_thread.start()
 
-#     def _export_data_periodically(self):
-#         while True:
-#             time.sleep(self.export_interval)
-#             self.export_to_excel()
+#     # def _export_data_periodically(self):
+#     #     while True:
+#     #         time.sleep(self.export_interval)
+#     #         self.export_to_excel()
 
 #     def update_stats(self, vehicles):
 #         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -54,6 +54,7 @@
 #         })
 
 #         self.stats_data = pd.concat([self.stats_data, new_data], ignore_index=True)
+#         threading.Thread(self.export_to_excel())
         
     
 #     def log_accident(self, vehicle_1_Type : str, vehicle_2_Type : str, vehicle_1_Speed : float, vehicle_2_Speed : float, accidentID : int):
@@ -70,6 +71,7 @@
 
     
 #     def export_to_excel(self):
+#         print("exporting to excel")
 #         with pd.ExcelWriter(self.filename, engine='openpyxl') as writer:
 #             self.stats_data.to_excel(writer, sheet_name='Statistics', index=False)
 #             self.accidents_data.to_excel(writer, sheet_name='Accidents', index=False)
@@ -82,8 +84,8 @@ import threading
 import time
 import pandas as pd
 from openpyxl import load_workbook
-
 pd.set_option('display.precision', 2)
+
 
 class DataManager:
     def __init__(self, filename='simulation_data.xlsx', export_interval=2, roadType='', numOfLanes=1):
@@ -93,18 +95,21 @@ class DataManager:
         self.numOfLanes = numOfLanes
         self.stats_data = pd.DataFrame(columns=['Time Stamp', 'Average Speed', 'Density'])
         self.accidents_data = pd.DataFrame(columns=['Time Stamp', 'Vehicle Types', 'Speeds At Crash Time (km\h)', 'Accident ID'])
-        self._start_export_thread()
+    #     self._start_export_thread()
 
-    def _start_export_thread(self):
-        self.export_thread = threading.Thread(target=self._export_data_periodically)
-        self.export_thread.daemon = True  # Daemonize thread so it automatically dies when the main program ends
-        self.export_thread.start()
+    
+    # def _start_export_thread(self):
+    #     self.export_thread = threading.Thread(target=self._export_data_periodically)
+    #     self.export_thread.daemon = True  # Daemonize thread so it automatically dies when the main program ends
+    #     self.export_thread.start()
 
-    def _export_data_periodically(self):
-        while True:
-            time.sleep(self.export_interval)
-            self.export_to_excel(self.roadType, self.numOfLanes)
+    
+    # def _export_data_periodically(self):
+    #     while True:
+    #         time.sleep(self.export_interval)
+    #         self.export_to_excel(self.roadType, self.numOfLanes)
 
+    
     def update_stats(self, vehicles):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         total_speed, count = 0, 0
@@ -136,7 +141,9 @@ class DataManager:
         })
 
         self.stats_data = pd.concat([self.stats_data, new_data], ignore_index=True)
+        threading.Thread(self.export_to_excel(self.roadType, self.numOfLanes))
         
+    
     def log_accident(self, vehicle_1_Type : str, vehicle_2_Type : str, vehicle_1_Speed : float, vehicle_2_Speed : float, accidentID : int):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         vehicle_types = f"{vehicle_1_Type} and {vehicle_2_Type}"
@@ -149,6 +156,7 @@ class DataManager:
         })
         self.accidents_data = pd.concat([self.accidents_data, new_data], ignore_index=True)
 
+    
     def export_to_excel(self, roadType: str, numOfLanes: int):
         sheet_name = f"{roadType} road {numOfLanes} lanes" if numOfLanes > 1 else f"{roadType} road {numOfLanes} lane"
 
@@ -159,10 +167,15 @@ class DataManager:
                 del book[sheet_name]
         except FileNotFoundError:
             book = None
-        
+
         with pd.ExcelWriter(self.filename, engine='openpyxl', mode='a' if book else 'w') as writer:
             if book:
-                writer._book = book
+                writer._book = book  # Assign the loaded workbook to the writer
             self.stats_data.to_excel(writer, sheet_name=sheet_name, index=False)
             if 'Accidents' not in writer.book.sheetnames:
                 self.accidents_data.to_excel(writer, sheet_name='Accidents', index=False)
+
+        # Ensure the workbook is saved and closed properly if it was opened
+        if book is not None:
+            book.save(self.filename)
+            book.close()

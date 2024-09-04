@@ -16,12 +16,16 @@ class Button:
         mousePosition = mouse.get_pos()
         
         if self.rect.collidepoint(mousePosition):
-            if mouse.get_pressed()[0] and not self.clicked:
+            if mouse.get_pressed()[0]:
                 self.clicked = True
+                            
+        if self.rect.collidepoint(mousePosition):
+            if not mouse.get_pressed()[0] and self.clicked:
+                self.clicked = False
                 action = True
             
-        if not mouse.get_pressed()[0]:
+        if not self.rect.collidepoint(mousePosition):
             self.clicked = False
-        
+            
         surface.blit(self.image, (self.rect.x, self.rect.y))
         return action
