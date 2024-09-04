@@ -120,7 +120,7 @@ class Road:
         else:
             return entryPathTurnCoordinates[targetPositionIndex]
 
-    def is_finished_entering_roundabout(self, targetPosition : Vector2, roundaboutId : int, sourceDirectionIndex : int) -> bool:
+    def is_turn_integrates_roundabout(self, targetPosition : Vector2, roundaboutId : int, sourceDirectionIndex : int) -> bool:
         entryPathTurnCoordinates = self.roundabouts[roundaboutId].entryPaths[str(sourceDirectionIndex)][1] # Coordinates of the turn
         if targetPosition == entryPathTurnCoordinates[-1]:
             return True
@@ -158,6 +158,8 @@ class Road:
     def get_roundabout_to_road_index(self, roundaboutId : int, desiredRoadIndex, desiredDirectionIndex) -> int:
         desiredPathIndexes = f"[{desiredRoadIndex},{desiredDirectionIndex}]"
         return self.roundabouts[roundaboutId].exitPaths[desiredPathIndexes][2]
+    
+    
     
     #======== class Lane ========#
     class Lane:
