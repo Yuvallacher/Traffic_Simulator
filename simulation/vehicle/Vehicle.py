@@ -174,7 +174,7 @@ class Vehicle:
                 self.roadIndex = int(self.desiredRoadIndex)
                 self.directionIndex = int(self.desiredDirectionIndex)
                 self.exitingRoundabout = False
-                self.set_desired_speed(world.MAX_SPEED)
+                self.set_desired_speed(world.maxSpeed)
             
         elif self.enterJunction:
             if self.inJunction:
