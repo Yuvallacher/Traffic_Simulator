@@ -2,11 +2,9 @@ from simulation.data.DataManager import DataManager
 from drawings.vehicle_drawer import VehicleDrawer
 from simulation.world.hazard import SpeedLimit
 from simulation.world.hazard import StopSign
-from simulation.world.hazard import Hazard
 from simulation.world.World import World
 from simulation.simulationManager import SimulatorManager
 from pygame.math import Vector2
-from gui.inputBox import InputBox
 from gui.button import Button
 import pygame
 import sys
@@ -79,7 +77,6 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
                         selectedSign = None
                     else:
                         selectedSign.inputBox.handle_event(event)
-            
             if event.type == pygame.MOUSEBUTTONDOWN: 
                 if event.button == 1:
                     mouse_pos = pygame.mouse.get_pos()

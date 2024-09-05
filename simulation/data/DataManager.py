@@ -18,7 +18,7 @@ class DataManager:
     
     def update_stats(self, vehicles, roadType : str):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        totalSpeed, count, totalVehiclesInJunction = 0, 0, 0
+        totalSpeed, count, totalVehiclesInJunction, totalVehiclesInRoundabout = 0, 0, 0, 0
         roadDirectionStats = {}
 
         for vehicle in vehicles:
@@ -29,6 +29,10 @@ class DataManager:
                 if vehicle.countForJunctionData:
                     totalVehiclesInJunction += 1
                     vehicle.countForJunctionData = False
+                if vehicle.countForRoundaboutData:
+                    totalVehiclesInRoundabout += 1
+                    vehicle.countForRoundaboutData = False
+                
                 key = (vehicle.roadIndex, vehicle.directionIndex)
                 if key not in roadDirectionStats:
                     roadDirectionStats[key] = {'total_speed': 0, 'count': 0}
@@ -36,7 +40,8 @@ class DataManager:
                 roadDirectionStats[key]['total_speed'] += speed
                 roadDirectionStats[key]['count'] += 1
 
-        amountOfVehiclesInJunctionInGivenTime = {"Vehicle count in Plus Junction in last time stamp": [totalVehiclesInJunction]} if roadType == "junction" else {}
+        amountOfVehiclesInJunctionInGivenTime = {"Vehicle count in plus-junction in last time stamp": [totalVehiclesInJunction]} if roadType == "junction" else {}
+        amountOfVehiclesInRoundaboutInGivenTime = {"Vehicle count in roundabout in last time stamp": [totalVehiclesInRoundabout]} if roadType == "roundabout" else {}
         avgSpeed = totalSpeed / count if count > 0 else 0
         avgSpeedsPerRoadDirection = {
             f'Avg. Speed (Road {road}, Direction {direction})': (stats['total_speed'] / stats['count'] if stats['count'] > 0 else 0)
@@ -48,6 +53,7 @@ class DataManager:
             'Average Speed': [avgSpeed],
             'Density': [count],
             **amountOfVehiclesInJunctionInGivenTime,
+            **amountOfVehiclesInRoundaboutInGivenTime,
             **avgSpeedsPerRoadDirection 
         })
 

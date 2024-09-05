@@ -49,6 +49,8 @@ class Vehicle:
         self.inJunction = False
         self.shouldCountForJunctionData = True
         self.countForJunctionData = False
+        self.shouldCountForRoundaboutData = True
+        self.countForRoundaboutData = False
         self.desiredJunctionRoadIndex = self.roadIndex
         self.desiredJunctionsDirectionIndex = self.directionIndex
         self.turnDirection : str = ""
@@ -196,6 +198,7 @@ class Vehicle:
     def exiting_roundabout(self, road : Road, maxSpeed : float) -> Vector2:
         nextTargetPosition = road.get_next_target_position_of_roundabout_exit(self.roundaboutId, self.roundaboutTargetPositionIndex, self.desiredRoadIndex, self.desiredDirectionIndex)
         if road.is_end_of_roundabout_exit(self.roundaboutId, nextTargetPosition, self.desiredRoadIndex, self.desiredDirectionIndex):
+            self.countForRoundaboutData = True
             self.targetPositionIndex = road.get_roundabout_to_road_index(self.roundaboutId, self.desiredRoadIndex, self.desiredDirectionIndex)
             self.roadIndex = int(self.desiredRoadIndex)
             self.directionIndex = int(self.desiredDirectionIndex)
