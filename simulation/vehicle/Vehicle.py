@@ -204,13 +204,6 @@ class Vehicle:
     
     def calculate_acceleration(self, allHazards : dict, politeness : int, fps : int, road : Road) -> float:
         # === Added ===
-        # if not self.inRoundabout and not self.exitingRoundabout and not self.enteringRoundabout:
-        #     checkTargetPosition = road.get_target_position(self.directionIndex, self.desiredLaneIndex, self.targetPositionIndex + 4)
-        #     isCloseToRoundabout, roundaboutId = road.is_roundabout_entry_point(checkTargetPosition, self.directionIndex)
-        #     if isCloseToRoundabout:
-        #         self.roundaboutId = roundaboutId
-        #         self.stoppingPoint = checkTargetPosition
-        # === Added ===
         isVehicleAhead, isHazardAhead = self.get_clear_road_status(allHazards['vehicle_ahead'], allHazards['hazards_ahead'])
         if not isVehicleAhead and not isHazardAhead:
             if self.stoppingPoint is not None:

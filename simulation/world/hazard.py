@@ -1,5 +1,7 @@
 from pygame.surface import Surface
 from pygame.math import Vector2
+from gui.inputBox import InputBox
+import pygame
 from abc import ABC, abstractmethod
 
 global id
@@ -45,18 +47,38 @@ class Hazard:
         self.directionIndex = directionIndex
 
 class SpeedLimit(Hazard):
-    def __init__(self, location: Vector2, roadIndex: int, directionIndex: int, images: list[Surface], speed_limit: int):
-        super().__init__("speedLimit", location, roadIndex, directionIndex, images, {"limit": speed_limit}, priority=1)
+    def __init__(self, location: Vector2, roadIndex: int, directionIndex: int, images: list[Surface], speedLimit: int):
+        super().__init__("speedLimit", location, roadIndex, directionIndex, images, {"limit": speedLimit}, priority=1)
+        self.inputBox = InputBox(self.rect.centerx - 25, self.rect.centery - 10, 50, 32, pygame.font.Font(None, 18), defaultText=str(speedLimit), drawBorder=False)
+        self.inputActive = False
 
     def affect_vehicle(self, vehicle, distance: float) -> float:
         if distance <= 50:
             vehicle.set_desired_speed(self.attributes["limit"])
-        return -10 # for overide
+        return -10
 
-    def check_hazard_rule_completion(self, vehicle, distance : float) -> bool:
-        if distance <= 50:
-            return True
-        return False
+    def check_hazard_rule_completion(self, vehicle, distance: float) -> bool:
+        return distance <= 50
+
+    def draw(self, screen):
+        # Display the speed limit sign image
+        screen.blit(self.images[0], self.rect)
+
+        # Update the input box position to stay inside the sign
+        self.inputBox.rect.topleft = (self.rect.centerx - 12, self.rect.centery - 30)
+
+        # Draw the input box (only text, no border)
+        self.inputBox.draw(screen)
+
+    def update_input_box_position(self):
+        # Update the position of the input box to follow the sign
+        self.inputBox.rect.topleft = (self.rect.centerx - 23, self.rect.centery - 10)
+
+    def set_speed_limit(self, newLimit: float):
+        newLimitInt = int(newLimit)
+        self.attributes["limit"] = newLimit
+        self.inputBox.text = str(newLimitInt)
+        self.inputBox.txt_surface = pygame.font.Font(None, 18).render(str(newLimitInt), True, self.inputBox.color)
 
 
 class StopSign(Hazard):

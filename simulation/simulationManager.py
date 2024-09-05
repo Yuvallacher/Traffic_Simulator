@@ -46,8 +46,8 @@ class SimulatorManager():
         ]
 
         font = pygame.font.Font(None, 32)
-        maxSpeedInput = InputBox(250, 200, 140, 32, font, default_text="90")
-        numOfLanesInput = InputBox(250, 250, 140, 32, font, default_text="2")
+        maxSpeedInput = InputBox(250, 200, 140, 32, font, defaultText="90")
+        numOfLanesInput = InputBox(250, 250, 140, 32, font, defaultText="2")
 
         startButton = Button(350, 350, pygame.image.load("pictures\\buttonPictures\\startIcon.png").convert_alpha(), 0.3)
         selectedRoadIndex = None

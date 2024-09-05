@@ -16,6 +16,7 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
     global selectRoadButton, restartButton, pauseButton, playButton, exitButton
     global hazards
     activeSign = None
+    selectedSign = None
         
     while simulationWorld.simulationRunning:
         simulationWorld.screen.fill(simulationWorld.GREEN)
@@ -39,7 +40,10 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
 
         VehicleDrawer.draw_vehicles(simulationWorld.vehiclesManager.vehicles, simulationWorld.screen)
         for hazard in simulationWorld.hazards:
-            simulationWorld.screen.blit(hazard.images[0], hazard.rect)
+            if isinstance(hazard, SpeedLimit):
+                hazard.draw(simulationWorld.screen)
+            else:
+                simulationWorld.screen.blit(hazard.images[0], hazard.rect)
             if hazard.drawLine:
                 pygame.draw.line(simulationWorld.SCREEN, (255, 0, 0), hazard.lineStart, hazard.lineEnd, 2)
 
@@ -61,15 +65,44 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 simulationWorld.simulationRunning = False
-            if event.type == pygame.MOUSEBUTTONDOWN: # MOVE FROM HERE
+            if event.type == pygame.KEYDOWN:
+                if selectedSign is not None and selectedSign.inputActive:
+                    if event.key == pygame.K_RETURN:
+                        new_speed = selectedSign.inputBox.get_text()
+                        if new_speed.replace('.', '', 1).isdigit() and float(new_speed) > 0:
+                            selectedSign.set_speed_limit(float(new_speed))
+                        selectedSign.inputBox.active = False
+                        selectedSign.inputActive = False 
+                        selectedSign = None
+                    else:
+                        selectedSign.inputBox.handle_event(event)
+            
+            if event.type == pygame.MOUSEBUTTONDOWN: 
                 if event.button == 1:
                     mouse_pos = pygame.mouse.get_pos()
+                    if selectedSign is not None:
+                        if not selectedSign.rect.collidepoint(mouse_pos):
+                            new_speed = selectedSign.inputBox.get_text()
+                            if new_speed.replace('.', '', 1).isdigit() and float(new_speed) > 0:
+                                selectedSign.set_speed_limit(float(new_speed))
+                            selectedSign.inputBox.active = False
+                            selectedSign.inputActive = False 
+                            selectedSign = None
                     for hazard in simulationWorld.hazards:
                         if hazard.rect.collidepoint(mouse_pos):
                             activeSign = hazard
+                elif event.button == 3:
+                    mouse_pos = pygame.mouse.get_pos()
+                    for hazard in simulationWorld.hazards:
+                        if hazard.rect.collidepoint(mouse_pos) and hazard.type == "speedLimit":
+                            selectedSign = hazard
+                            selectedSign.inputActive = True  # Activate the input box
+                            selectedSign.inputBox.active = True
             if event.type == pygame.MOUSEMOTION:
                 if activeSign is not None:
                     activeSign.rect.move_ip(event.rel)
+                    if activeSign.type == "speedLimit":
+                            activeSign.update_input_box_position()
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     if activeSign is not None:
