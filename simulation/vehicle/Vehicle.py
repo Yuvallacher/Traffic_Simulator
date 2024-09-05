@@ -355,8 +355,8 @@ class Vehicle:
     def can_enter_roundabout(self, road : Road, vehiclesLeft : list['Vehicle'], vehiclesFront : list['Vehicle'], roundaboutId : int) -> bool:
         direction = Vector2(1, 0).rotate(-self.driveAngle)
         rightRoundaboutEnterFov = self.create_fov_boundary(direction, 10, 60, 70)
-        line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + rightRoundaboutEnterFov[0]), 1)
-        line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + rightRoundaboutEnterFov[1]), 1)
+        # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + rightRoundaboutEnterFov[0]), 1)
+        # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + rightRoundaboutEnterFov[1]), 1)
         canEnter = True
         for vehicle in vehiclesFront:
             if (vehicle.inRoundabout or vehicle.enteringRoundabout or vehicle.exitingRoundabout) and roundaboutId == vehicle.roundaboutId:
