@@ -13,40 +13,45 @@ class DataManager:
         self.export_interval = export_interval
         self.roadType = roadType
         self.numOfLanes = numOfLanes
-        self.stats_data = pd.DataFrame(columns=['Time Stamp', 'Average Speed', 'Density'])
-        self.accidents_data = pd.DataFrame(columns=['Time Stamp', 'Vehicle Types', 'Speeds At Crash Time (km\h)', 'Accident ID'])
+        self.statsData = pd.DataFrame(columns=['Time Stamp', 'Average Speed', 'Density'])
+        self.accidentsData = pd.DataFrame(columns=['Time Stamp', 'Vehicle Types', 'Speeds At Crash Time (km\h)', 'Accident ID'])
     
-    def update_stats(self, vehicles):
+    def update_stats(self, vehicles, roadType : str):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        total_speed, count = 0, 0
-        road_direction_stats = {}
+        totalSpeed, count, totalVehiclesInJunction = 0, 0, 0
+        roadDirectionStats = {}
 
         for vehicle in vehicles:
             if not vehicle.inAccident:
                 speed = PixelsConverter.convert_pixels_per_frames_to_speed(vehicle.speed)
-                total_speed += speed
+                totalSpeed += speed
                 count += 1
+                if vehicle.countForJunctionData:
+                    totalVehiclesInJunction += 1
+                    vehicle.countForJunctionData = False
                 key = (vehicle.roadIndex, vehicle.directionIndex)
-                if key not in road_direction_stats:
-                    road_direction_stats[key] = {'total_speed': 0, 'count': 0}
+                if key not in roadDirectionStats:
+                    roadDirectionStats[key] = {'total_speed': 0, 'count': 0}
 
-                road_direction_stats[key]['total_speed'] += speed
-                road_direction_stats[key]['count'] += 1
+                roadDirectionStats[key]['total_speed'] += speed
+                roadDirectionStats[key]['count'] += 1
 
-        avg_speed = total_speed / count if count > 0 else 0
-        avg_speeds_per_road_direction = {
+        amountOfVehiclesInJunctionInGivenTime = {"Vehicle count in Plus Junction in last time stamp": [totalVehiclesInJunction]} if roadType == "junction" else {}
+        avgSpeed = totalSpeed / count if count > 0 else 0
+        avgSpeedsPerRoadDirection = {
             f'Avg. Speed (Road {road}, Direction {direction})': (stats['total_speed'] / stats['count'] if stats['count'] > 0 else 0)
-            for (road, direction), stats in road_direction_stats.items()
+            for (road, direction), stats in roadDirectionStats.items()
         }
 
         new_data = pd.DataFrame({
             'Time Stamp': [current_time],
-            'Average Speed': [avg_speed],
+            'Average Speed': [avgSpeed],
             'Density': [count],
-            **avg_speeds_per_road_direction  # Add the dynamic stats
+            **amountOfVehiclesInJunctionInGivenTime,
+            **avgSpeedsPerRoadDirection 
         })
 
-        self.stats_data = pd.concat([self.stats_data, new_data], ignore_index=True)
+        self.statsData = pd.concat([self.statsData, new_data], ignore_index=True)
         threading.Thread(self.export_to_excel(self.roadType, self.numOfLanes))
         
     
@@ -60,7 +65,7 @@ class DataManager:
             'Speeds At Crash Time (km\h)': [speeds],
             'Accident ID': [accidentID]
         })
-        self.accidents_data = pd.concat([self.accidents_data, new_data], ignore_index=True)
+        self.accidentsData = pd.concat([self.accidentsData, new_data], ignore_index=True)
 
     
     def export_to_excel(self, roadType: str, numOfLanes: int):
@@ -77,9 +82,9 @@ class DataManager:
         with pd.ExcelWriter(self.filename, engine='openpyxl', mode='a' if book else 'w') as writer:
             if book:
                 writer._book = book  # Assign the loaded workbook to the writer
-            self.stats_data.to_excel(writer, sheet_name=sheet_name, index=False)
+            self.statsData.to_excel(writer, sheet_name=sheet_name, index=False)
             if 'Accidents' not in writer.book.sheetnames:
-                self.accidents_data.to_excel(writer, sheet_name='Accidents', index=False)
+                self.accidentsData.to_excel(writer, sheet_name='Accidents', index=False)
 
         # Ensure the workbook is saved and closed properly if it was opened
         if book is not None:

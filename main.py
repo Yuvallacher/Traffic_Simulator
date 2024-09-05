@@ -57,7 +57,7 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
 
             current_time = pygame.time.get_ticks()
             if current_time >= nextStatUpdate:
-                dataManager.update_stats(simulationWorld.vehiclesManager.vehicles)
+                dataManager.update_stats(simulationWorld.vehiclesManager.vehicles, simulationManager.roadType)
                 nextStatUpdate = current_time + dataManager.export_interval * 1000
 
             delete = [key for key in simulationWorld.accidentManager.allAccidents.keys() if simulationWorld.accidentManager.allAccidents[key].check_if_3_seconds_elapsed()]
@@ -135,15 +135,14 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
                             activeSign.drawLine = True
                         else:
                             activeSign.drawLine = False
-                            activeSign.roadIndex = -1
-                            activeSign.directionIndex = -1
                             if activeSign.nearJunction:
                                 if activeSign.priority == 2:
                                     simulationWorld.roads[activeSign.roadIndex].update_road_and_direction_priority(activeSign.junctionID, activeSign.roadIndex, activeSign.directionIndex, activeSign.id, True)
                                 activeSign.nearJunction = False
                                 activeSign.junctionID = None
+                            activeSign.roadIndex = -1
+                            activeSign.directionIndex = -1
                         activeSign = None
-                            
 
         # pygame.display.update()
         pygame.display.flip()
