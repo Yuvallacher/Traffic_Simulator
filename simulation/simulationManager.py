@@ -121,7 +121,7 @@ class SimulatorManager():
     def initialize_simulation(simulationManager : 'SimulatorManager') -> list[World, DataManager, int]:
         simulationWorld = World(simulationManager.roadType, simulationManager.numOfLanes, simulationManager.maxSpeed)
         simulationWorld.set_vehicles_manager(VehiclesManager(simulationWorld.NUMBER_OF_CARS))
-        dataManager = DataManager(simulationManager.filePath, 2, simulationManager.roadType, simulationManager.numOfLanes)
+        dataManager = DataManager(simulationManager.filePath, 5, simulationManager.roadType, simulationManager.numOfLanes)
         nextStatUpdate = pygame.time.get_ticks() + dataManager.export_interval * 1000
         
         return simulationWorld, dataManager, nextStatUpdate

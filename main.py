@@ -31,6 +31,9 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
         if restartButton.draw(simulationWorld.screen):
             simulationWorld, dataManager, nextStatUpdate = SimulatorManager.initialize_simulation(simulationManager)
             simulationWorld.hazards = hazards
+            for hazard in simulationWorld.hazards:
+                if hazard.nearJunction:
+                    simulationWorld.roads[hazard.roadIndex].update_road_and_direction_priority(hazard.junctionID, hazard.roadIndex, hazard.directionIndex, hazard.id, False)
         if selectRoadButton.draw(simulationWorld.screen):
             simulationManager = SimulatorManager.select_road(simulationWorld.screen, simulationManager.filePath)
             simulationWorld, dataManager, nextStatUpdate = SimulatorManager.initialize_simulation(simulationManager)
@@ -140,7 +143,8 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
                         activeSign = None
                             
 
-        pygame.display.update()
+        # pygame.display.update()
+        pygame.display.flip()
         simulationWorld.clock.tick(simulationWorld.FPS)
 
     pygame.quit()
