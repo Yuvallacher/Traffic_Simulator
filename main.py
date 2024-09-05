@@ -16,6 +16,7 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
     global selectRoadButton, restartButton, pauseButton, playButton, exitButton
     global hazards
     activeSign = None
+    selectedSign = None
         
     while simulationWorld.simulationRunning:
         simulationWorld.screen.fill(simulationWorld.GREEN)
@@ -30,6 +31,9 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
         if restartButton.draw(simulationWorld.screen):
             simulationWorld, dataManager, nextStatUpdate = SimulatorManager.initialize_simulation(simulationManager)
             simulationWorld.hazards = hazards
+            for hazard in simulationWorld.hazards:
+                if hazard.nearJunction:
+                    simulationWorld.roads[hazard.roadIndex].update_road_and_direction_priority(hazard.junctionID, hazard.roadIndex, hazard.directionIndex, hazard.id, False)
         if selectRoadButton.draw(simulationWorld.screen):
             simulationManager = SimulatorManager.select_road(simulationWorld.screen, simulationManager.filePath)
             simulationWorld, dataManager, nextStatUpdate = SimulatorManager.initialize_simulation(simulationManager)
@@ -39,7 +43,12 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
 
         VehicleDrawer.draw_vehicles(simulationWorld.vehiclesManager.vehicles, simulationWorld.screen)
         for hazard in simulationWorld.hazards:
-            simulationWorld.screen.blit(hazard.images[0], hazard.rect)
+            if isinstance(hazard, SpeedLimit):
+                hazard.draw(simulationWorld.screen)
+            else:
+                simulationWorld.screen.blit(hazard.images[0], hazard.rect)
+            if hazard.drawLine:
+                pygame.draw.line(simulationWorld.SCREEN, (255, 0, 0), hazard.lineStart, hazard.lineEnd, 2)
 
         if not simulationWorld.simulationPaused:
             simulationWorld.vehiclesManager.add_vehicles(simulationWorld, simulationWorld.screen)
@@ -59,38 +68,83 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 simulationWorld.simulationRunning = False
-            if event.type == pygame.MOUSEBUTTONDOWN: # MOVE FROM HERE
+            if event.type == pygame.KEYDOWN:
+                if selectedSign is not None and selectedSign.inputActive:
+                    if event.key == pygame.K_RETURN:
+                        new_speed = selectedSign.inputBox.get_text()
+                        if new_speed.replace('.', '', 1).isdigit() and float(new_speed) > 0:
+                            selectedSign.set_speed_limit(float(new_speed))
+                        selectedSign.inputBox.active = False
+                        selectedSign.inputActive = False 
+                        selectedSign = None
+                    else:
+                        selectedSign.inputBox.handle_event(event)
+            
+            if event.type == pygame.MOUSEBUTTONDOWN: 
                 if event.button == 1:
                     mouse_pos = pygame.mouse.get_pos()
+                    if selectedSign is not None:
+                        if not selectedSign.rect.collidepoint(mouse_pos):
+                            new_speed = selectedSign.inputBox.get_text()
+                            if new_speed.replace('.', '', 1).isdigit() and float(new_speed) > 0:
+                                selectedSign.set_speed_limit(float(new_speed))
+                            selectedSign.inputBox.active = False
+                            selectedSign.inputActive = False 
+                            selectedSign = None
                     for hazard in simulationWorld.hazards:
                         if hazard.rect.collidepoint(mouse_pos):
                             activeSign = hazard
+                elif event.button == 3:
+                    mouse_pos = pygame.mouse.get_pos()
+                    for hazard in simulationWorld.hazards:
+                        if hazard.rect.collidepoint(mouse_pos) and hazard.type == "speedLimit":
+                            selectedSign = hazard
+                            selectedSign.inputActive = True  # Activate the input box
+                            selectedSign.inputBox.active = True
             if event.type == pygame.MOUSEMOTION:
                 if activeSign is not None:
                     activeSign.rect.move_ip(event.rel)
+                    if activeSign.type == "speedLimit":
+                            activeSign.update_input_box_position()
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
-                    if activeSign is not None: #and activeSign.rect.collidepoint(mouse_pos):
+                    if activeSign is not None:
                         mousePosAsVector = Vector2(pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1])
                         closestPoint = simulationWorld.search_closest_point_in_roads(mousePosAsVector)
-                        vector = closestPoint["coordinate"] - closestPoint["nextCoordinate"]
-                        midpoint = (closestPoint["coordinate"] + closestPoint["nextCoordinate"]) / 2
-                        perpendicularVector =  Vector2(-vector.y, vector.x).normalize() * 15
-                        perpendicularStart = midpoint - perpendicularVector
-                        perpendicularEnd = midpoint + perpendicularVector 
-                        activeSign.rect.center = perpendicularStart + Vector2(0, -40)
-                        activeSign.set_new_position(closestPoint["roadIndex"], closestPoint["directionIndex"], closestPoint["coordinate"])
-                        activeSign.lineMidPoint = midpoint
-                        activeSign.lineStart = perpendicularStart
-                        activeSign.lineEnd = perpendicularEnd
-                        activeSign.drawLine = True
+                        if closestPoint:
+                            if activeSign.priority == 2:
+                                if activeSign.nearJunction:
+                                    simulationWorld.roads[activeSign.roadIndex].update_road_and_direction_priority(activeSign.junctionID, activeSign.roadIndex, activeSign.directionIndex, activeSign.id, True)
+                                if closestPoint["nearJunction"]:
+                                    simulationWorld.roads[closestPoint["roadIndex"]].update_road_and_direction_priority(closestPoint["junctionID"], closestPoint["roadIndex"], closestPoint["directionIndex"], activeSign.id, False)
+                                    activeSign.nearJunction = True
+                                    activeSign.junctionID = closestPoint["junctionID"]
+                                else:
+                                    activeSign.nearJunction = False
+                                    activeSign.junctionID = None
+                            vector = closestPoint["coordinate"] - closestPoint["nextCoordinate"]
+                            midpoint = (closestPoint["coordinate"] + closestPoint["nextCoordinate"]) / 2
+                            perpendicularVector =  Vector2(-vector.y, vector.x).normalize() * 15
+                            perpendicularStart = midpoint - perpendicularVector
+                            perpendicularEnd = midpoint + perpendicularVector 
+                            activeSign.rect.center = perpendicularStart + Vector2(0, -40)
+                            activeSign.set_new_position(closestPoint["roadIndex"], closestPoint["directionIndex"], closestPoint["coordinate"])
+                            activeSign.lineMidPoint = midpoint
+                            activeSign.lineStart = perpendicularStart
+                            activeSign.lineEnd = perpendicularEnd
+                            activeSign.drawLine = True
+                        else:
+                            activeSign.drawLine = False
+                            if activeSign.nearJunction:
+                                if activeSign.priority == 2:
+                                    simulationWorld.roads[activeSign.roadIndex].update_road_and_direction_priority(activeSign.junctionID, activeSign.roadIndex, activeSign.directionIndex, activeSign.id, True)
+                                activeSign.nearJunction = False
+                                activeSign.junctionID = None
                         activeSign = None
-        
-        for hazard in simulationWorld.hazards:
-            if hazard.drawLine:
-                pygame.draw.line(simulationWorld.SCREEN, (255, 0, 0), hazard.lineStart, hazard.lineEnd, 2)
+                            
 
-        pygame.display.update()
+        # pygame.display.update()
+        pygame.display.flip()
         simulationWorld.clock.tick(simulationWorld.FPS)
 
     pygame.quit()

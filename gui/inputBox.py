@@ -6,13 +6,14 @@ BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 
 class InputBox:
-    def __init__(self, x, y, w, h, font, default_text='', text=''):
+    def __init__(self, x, y, w, h, font, defaultText='', text='', drawBorder=True):
         self.rect = Rect(x, y, w, h)
         self.color = BLACK
-        self.text = text if text else default_text
-        self.default_text = default_text
+        self.text = text if text else defaultText
+        self.default_text = defaultText
         self.active = False
         self.txt_surface = font.render(self.text, True, self.color)
+        self.drawBorder = drawBorder
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -43,7 +44,8 @@ class InputBox:
 
     def draw(self, screen):
         screen.blit(self.txt_surface, (self.rect.x + 5, self.rect.y + 5))
-        pygame.draw.rect(screen, self.color, self.rect, 2)
+        if self.drawBorder:
+            pygame.draw.rect(screen, self.color, self.rect, 2)
 
     def get_text(self):
         return self.text if self.text else self.default_text

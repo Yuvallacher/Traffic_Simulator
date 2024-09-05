@@ -109,10 +109,10 @@ class Vehicle:
         """
         allHazards = self.get_all_hazards_around_vehicle(allVehicles, road, dataManager, accidentManager, world.hazards)
         if not self.inAccident:
-            self.make_next_desicion(road, world, allHazards, dataManager)
+            self.make_next_desicion(road, world, allHazards)
     
         
-    def make_next_desicion(self, road : Road, world : World, allHazards : dict, dataManager : DataManager):
+    def make_next_desicion(self, road : Road, world : World, allHazards : dict):
         """
         compute and execute the next decision based on the surroindings
         """
@@ -141,7 +141,7 @@ class Vehicle:
                 self.set_desired_speed(40)
             else:
                 if not self.inRoundabout and not self.exitingRoundabout and not self.enteringRoundabout and self.stoppingPoint is None:
-                    checkTargetPosition = road.get_target_position(self.directionIndex, self.desiredLaneIndex, self.targetPositionIndex + 3)
+                    checkTargetPosition = road.get_target_position(self.directionIndex, self.desiredLaneIndex, self.targetPositionIndex + 4)
                     isCloseToRoundabout, roundaboutId = road.is_roundabout_entry_point(checkTargetPosition, self.directionIndex)
                     if isCloseToRoundabout:
                         self.roundaboutId = roundaboutId
@@ -151,7 +151,6 @@ class Vehicle:
                     self.enteringRoundabout = True
                     self.roundaboutId = roundaboutId
                     self.draw_roundabout_exit_choice(road, self.roundaboutId)
-                    self.set_desired_speed(world.maxSpeed - 10)
 
         
         if self.enteringRoundabout:
@@ -161,7 +160,7 @@ class Vehicle:
                 self.inRoundabout = True
                 self.enteringRoundabout = False
                 # self.stoppingPoint = None # Added
-                # self.set_desired_speed(40)
+                self.set_desired_speed(40)
         elif self.inRoundabout:
             nextTargetPosition = road.get_next_target_position_of_roundabout_path(self.roundaboutId, self.roundaboutTargetPositionIndex + 1)        
             if road.is_desired_roundabout_exit_point(self.roundaboutId, nextTargetPosition, self.desiredRoadIndex, self.desiredDirectionIndex):
@@ -204,13 +203,6 @@ class Vehicle:
     
     
     def calculate_acceleration(self, allHazards : dict, politeness : int, fps : int, road : Road) -> float:
-        # === Added ===
-        # if not self.inRoundabout and not self.exitingRoundabout and not self.enteringRoundabout:
-        #     checkTargetPosition = road.get_target_position(self.directionIndex, self.desiredLaneIndex, self.targetPositionIndex + 4)
-        #     isCloseToRoundabout, roundaboutId = road.is_roundabout_entry_point(checkTargetPosition, self.directionIndex)
-        #     if isCloseToRoundabout:
-        #         self.roundaboutId = roundaboutId
-        #         self.stoppingPoint = checkTargetPosition
         # === Added ===
         isVehicleAhead, isHazardAhead = self.get_clear_road_status(allHazards['vehicle_ahead'], allHazards['hazards_ahead'])
         if not isVehicleAhead and not isHazardAhead:
@@ -322,7 +314,7 @@ class Vehicle:
             self.completedHazards[hazardID] = hazardCompletionStatus
 
 
-    def handle_roundabout_entry(self, road : Road, allHazards : dict, roundaboutId : int) -> Vector2:
+    def handle_roundabout_entry(self, road : Road, roundaboutId : int) -> Vector2:
         nextTargetPosition = road.get_roundabout_entry_target_position(self.roundaboutTargetPositionIndex, roundaboutId, self.directionIndex)
         return Vector2(nextTargetPosition)
 
@@ -799,32 +791,18 @@ class Vehicle:
     
     
     def get_closest_high_priority_hazard(self, hazards : list[Hazard]) -> list[Hazard, float]:
-        firstIteration = True
+        distanceToClosestHazard = float('inf')
+        closestHazard = hazards[0]
         for hazard in hazards:
-            if firstIteration:
-                firstIteration = False
+            distanceToCurrentHazard = self.get_distance_to_hazard(hazard)
+            if (hazard.priority > closestHazard.priority) or ((hazard.priority == closestHazard.priority) and (distanceToCurrentHazard < distanceToClosestHazard)):
                 closestHazard = hazard
-                distanceToClosestHazard = self.get_distance_to_hazard(hazard)
-            else:
-                distanceToCurrentHazard = self.get_distance_to_hazard(hazard)
-                if (hazard.priority > closestHazard.priority) or ((hazard.priority == closestHazard.priority) and (distanceToCurrentHazard < distanceToClosestHazard)):
-                    closestHazard = hazard
-                    distanceToClosestHazard = distanceToCurrentHazard
+                distanceToClosestHazard = distanceToCurrentHazard
         return hazard, distanceToClosestHazard
 
 
     def get_distance_to_hazard(self, hazard : Hazard):
-        # rect = hazard.images[0].get_rect(topleft=(hazard.location.x, hazard.location.y))
-        # hazardCorners = [
-        #     (rect.left, rect.top),     # Top-left corner
-        #     (rect.right, rect.top),    # Top-right corner
-        #     (rect.left, rect.bottom),  # Bottom-left corner
-        #     (rect.right, rect.bottom)  # Bottom-right corner
-        # ]
-        # distanceToClosestHazard = min([self.frontEdgeOfVehicle.distance_to(corner) for corner in hazardCorners])
         return self.frontEdgeOfVehicle.distance_to(hazard.lineMidPoint) if hazard.lineMidPoint is not None else float('inf')
-
-    # def get_vehicle_state(self, )
 
 
 

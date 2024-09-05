@@ -57,11 +57,22 @@ class World:
                 for laneIndex, lane in enumerate(direction):
                     for coorIndex, pathCoordinate in enumerate(lane.path):
                         distanceToCoordinate = pathCoordinate.distance_to(coordinate)
-                        if distanceToCoordinate < minimalDistance:
-                            minimalDistance = distanceToCoordinate
-                            closestPoint["coordinate"] = pathCoordinate
-                            closestPoint["nextCoordinate"] = self.roads[roadIndex].allLanesInRoad[directionIndex][laneIndex].path[coorIndex + 1]
-                            closestPoint["roadIndex"] = roadIndex
-                            closestPoint["directionIndex"] = directionIndex
-                            closestPoint["laneIndex"] = laneIndex
+                        if not road.is_point_part_of_junction(pathCoordinate) and not road.is_point_part_of_roundabout(pathCoordinate):
+                            if distanceToCoordinate < minimalDistance and distanceToCoordinate <= 100:
+                                minimalDistance = distanceToCoordinate
+                                path = self.roads[roadIndex].allLanesInRoad[directionIndex][laneIndex].path
+                                closestPoint["coordinate"] = pathCoordinate
+                                closestPoint["nextCoordinate"] = path[coorIndex + 1]
+                                closestPoint["roadIndex"] = roadIndex
+                                closestPoint["directionIndex"] = directionIndex
+                                closestPoint["laneIndex"] = laneIndex
+                                closestPoint["nearJunction"] = False
+                                closestPoint["junctionID"] = None
+                                for i in range(1, 3):
+                                    if len(path) > coorIndex + i:
+                                        isNearJunction, _, junctionID = road.is_start_of_junction(path[coorIndex + i], directionIndex)
+                                        if isNearJunction: 
+                                            closestPoint["nearJunction"] = True
+                                            closestPoint["junctionID"] = junctionID
+                                            break
         return closestPoint
