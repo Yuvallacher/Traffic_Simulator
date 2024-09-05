@@ -159,8 +159,23 @@ class Road:
         desiredPathIndexes = f"[{desiredRoadIndex},{desiredDirectionIndex}]"
         return self.roundabouts[roundaboutId].exitPaths[desiredPathIndexes][2]
     
-    
-    
+    def is_point_part_of_roundabout(self, coordinate : Vector2) -> bool:
+        is_coordinate_part_of = False
+        if self.roundabouts is not None:
+            for roundabout in self.roundabouts.values():
+                roundaboutPath = roundabout.path
+                if coordinate in roundaboutPath:
+                    is_coordinate_part_of = True
+                for exitPath in roundabout.exitPaths.values():
+                    if coordinate in exitPath[1]:
+                        is_coordinate_part_of = True
+                for entryPath in roundabout.entryPaths.values():
+                    if coordinate in entryPath[1]:
+                        is_coordinate_part_of = True
+        return is_coordinate_part_of
+
+           
+
     #======== class Lane ========#
     class Lane:
         def __init__(self, listOfCoordinates : list[Vector2], spawnPoint = True):
