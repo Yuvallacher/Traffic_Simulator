@@ -135,6 +135,8 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
                             activeSign.drawLine = True
                         else:
                             activeSign.drawLine = False
+                            activeSign.roadIndex = -1
+                            activeSign.directionIndex = -1
                             if activeSign.nearJunction:
                                 if activeSign.priority == 2:
                                     simulationWorld.roads[activeSign.roadIndex].update_road_and_direction_priority(activeSign.junctionID, activeSign.roadIndex, activeSign.directionIndex, activeSign.id, True)
