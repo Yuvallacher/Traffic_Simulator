@@ -5,7 +5,7 @@ from simulation.world.road import Road
 from simulation.world.hazard import Hazard
 
 class World:
-    NUMBER_OF_CARS = 100
+    NUMBER_OF_CARS = 30
     SPAWN_RATE = 6
 
     PIXELS_PER_METER = 5
