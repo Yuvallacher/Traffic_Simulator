@@ -2,7 +2,7 @@ from pygame.surface import Surface
 from pygame.math import Vector2
 from gui.inputBox import InputBox
 import pygame
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 global id
 id = 0
@@ -61,17 +61,11 @@ class SpeedLimit(Hazard):
         return distance <= 50
 
     def draw(self, screen):
-        # Display the speed limit sign image
         screen.blit(self.images[0], self.rect)
-
-        # Update the input box position to stay inside the sign
         self.inputBox.rect.topleft = (self.rect.centerx - 12, self.rect.centery - 30)
-
-        # Draw the input box (only text, no border)
         self.inputBox.draw(screen)
 
     def update_input_box_position(self):
-        # Update the position of the input box to follow the sign
         self.inputBox.rect.topleft = (self.rect.centerx - 23, self.rect.centery - 10)
 
     def set_speed_limit(self, newLimit: float):

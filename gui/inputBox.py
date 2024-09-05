@@ -17,11 +17,9 @@ class InputBox:
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
-            # If the user clicked on the input box
             if self.rect.collidepoint(event.pos):
                 self.active = not self.active
                 if self.active and self.text == self.default_text:
-                    # Clear the default text when the box becomes active
                     self.text = ''
             else:
                 self.active = False
@@ -35,7 +33,6 @@ class InputBox:
                     self.text = self.text[:-1]
                 else:
                     self.text += event.unicode
-                # Re-render the text
                 self.txt_surface = pygame.font.Font(None, 32).render(self.text, True, self.color)
 
     def update(self):

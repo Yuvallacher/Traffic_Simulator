@@ -1,7 +1,6 @@
 from calculations.pixels_calculations import PixelsConverter
 from datetime import datetime
 import threading
-import time
 import pandas as pd
 from openpyxl import load_workbook
 pd.set_option('display.precision', 2)
@@ -80,19 +79,17 @@ class DataManager:
         try:
             book = load_workbook(self.filename)
             if sheet_name in book.sheetnames:
-                # Remove the existing sheet
                 del book[sheet_name]
         except FileNotFoundError:
             book = None
 
         with pd.ExcelWriter(self.filename, engine='openpyxl', mode='a' if book else 'w') as writer:
             if book:
-                writer._book = book  # Assign the loaded workbook to the writer
+                writer._book = book 
             self.statsData.to_excel(writer, sheet_name=sheet_name, index=False)
             if 'Accidents' not in writer.book.sheetnames:
                 self.accidentsData.to_excel(writer, sheet_name='Accidents', index=False)
 
-        # Ensure the workbook is saved and closed properly if it was opened
         if book is not None:
             book.save(self.filename)
             book.close()

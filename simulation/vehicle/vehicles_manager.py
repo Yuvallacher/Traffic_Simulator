@@ -7,7 +7,6 @@ from simulation.vehicle.Vehicle import Truck
 from simulation.world.road import Road
 import simulation.data
 from pygame.math import Vector2
-from pygame import Surface
 from drawings.vehicle_drawer import VehicleDrawer
 import random
 import math
@@ -61,7 +60,7 @@ class VehiclesManager:
                                 self.vehicleID += 1
                         
                         
-    def updateCarPos(self, simulationWorld : World, dataManager : simulation.data.DataManager, accidentManager : simulation.data.Accident): #TODO probably move to a different place
+    def updateCarPos(self, simulationWorld : World, dataManager : simulation.data.DataManager, accidentManager : simulation.data.Accident):
         for vehicle in self.vehicles:
             vehicleRoad = simulationWorld.get_vehicle_road(vehicle.roadIndex)
             vehicle.drive(self.vehicles, simulationWorld, dataManager, accidentManager, vehicleRoad)

@@ -1,26 +1,12 @@
 PROJECTS:
 
-1) add user interface with scrollers, buttons and stuff like that to allow users to controll the environment variables -@Yuvallacher
+1) fix roundabout bugs
 
-1) create roundabout -@orenlan1, @seanbar2000
-    when adding a new road type: 
-        add data to JSON
-        add RoadBuilder method to read from JSON (like RoadBuilder.straight_road_read_lanes_from_file)
-        visualisation:
-            create new road pictures (e.g. two-way straight road with a continous seperating line! currently we incorrectly use the one-way straight road pictures)
-            scale road pictures and put in the correct place on the screen!!!!
+2) add data to excel file
 
-2) fix stop sign, fix self.speed = 0 when entering junction
-    2.1) implement traffic light 
-    2.2) add cone?
-
-3) add data to excel file
-
-4) close excel file properly when exiting the program!! to avoid file corruption
-
-
-
-
+3) fix self.speed = 0 when entering junction
+    3.1) implement traffic light 
+    3.2) add cone?
 
 
 EXTRA (if have time):

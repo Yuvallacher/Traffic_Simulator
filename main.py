@@ -96,7 +96,7 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
                     for hazard in simulationWorld.hazards:
                         if hazard.rect.collidepoint(mouse_pos) and hazard.type == "speedLimit":
                             selectedSign = hazard
-                            selectedSign.inputActive = True  # Activate the input box
+                            selectedSign.inputActive = True 
                             selectedSign.inputBox.active = True
             if event.type == pygame.MOUSEMOTION:
                 if activeSign is not None:
@@ -141,7 +141,6 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
                             activeSign.directionIndex = -1
                         activeSign = None
 
-        # pygame.display.update()
         pygame.display.flip()
         simulationWorld.clock.tick(simulationWorld.FPS)
 

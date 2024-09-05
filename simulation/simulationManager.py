@@ -6,7 +6,6 @@ from gui.button import Button
 from tkinter import filedialog
 import tkinter as tk
 import pygame
-import time
 import sys
 
 class SimulatorManager():
@@ -21,7 +20,7 @@ class SimulatorManager():
     def select_road(screen, previousFilePath : str = None) -> 'SimulatorManager':
         root = tk.Tk()
         root.withdraw()
-        chooseFileButton = Button(500, 200, pygame.image.load("pictures\\buttonPictures\\folderIcon.png").convert_alpha(), 0.1)
+        chooseFileButton = Button(600, 300, pygame.image.load("pictures\\buttonPictures\\folderIcon.png").convert_alpha(), 0.1)
         selectedFilePath = previousFilePath
         fileNameLabel = previousFilePath.split('/')[-1] if previousFilePath is not None else "Press the folder icon to select a file"
 
@@ -30,10 +29,10 @@ class SimulatorManager():
             pygame.image.load("pictures\\roadPictures\\junctionRoad.jpg").convert_alpha(),
             pygame.image.load("pictures\\roadPictures\\roundaboutRoad.jpg").convert_alpha()
         ]
-        scaledRoadImages = [pygame.transform.scale(img, (200, 100)) for img in roadImages]
+        scaledRoadImages = [pygame.transform.scale(img, (300, 150)) for img in roadImages]
 
         scaledRoadButtons = [
-            Button(50 + i * 250, 50, img, scale=1.0)
+            Button(50 + i * 400, 50, img, scale=1.0)
             for i, img in enumerate(scaledRoadImages)
         ]
 
@@ -46,34 +45,30 @@ class SimulatorManager():
         ]
 
         font = pygame.font.Font(None, 32)
-        maxSpeedInput = InputBox(250, 200, 140, 32, font, defaultText="90")
-        numOfLanesInput = InputBox(250, 250, 140, 32, font, defaultText="2")
+        maxSpeedInput = InputBox(250, 300, 140, 32, font, defaultText="90")
+        numOfLanesInput = InputBox(250, 350, 140, 32, font, defaultText="1")
 
-        startButton = Button(350, 350, pygame.image.load("pictures\\buttonPictures\\startIcon.png").convert_alpha(), 0.3)
+        startButton = Button(550, 500, pygame.image.load("pictures\\buttonPictures\\startIcon.png").convert_alpha(), 0.3)
         selectedRoadIndex = None
         errorMessage = ""
 
         while True:
             screen.fill((255, 255, 255))
 
-            # Display the road images as buttons
             for i, button in enumerate(scaledRoadButtons):
-                if button.draw(screen):  # If a button is clicked
+                if button.draw(screen):  
                     selectedRoadIndex = i
                     maxSpeedInput.text = roadDefaults[i]["maxSpeed"]
                     maxSpeedInput.txt_surface = font.render(maxSpeedInput.text, True, maxSpeedInput.color)
                     numOfLanesInput.text = roadDefaults[i]["numOfLanes"]
                     numOfLanesInput.txt_surface = font.render(numOfLanesInput.text, True, numOfLanesInput.color)
-
-                # Draw a green highlight around the selected road
                 if selectedRoadIndex == i:
                     pygame.draw.rect(screen, (0, 0, 255), button.rect, 3)
 
-            # Display the labels and input boxes
-            screen.blit(font.render("Max Speed:", True, (0, 0, 0)), (50, 205))
+            screen.blit(font.render("Max Speed:", True, (0, 0, 0)), (50, 305))
             maxSpeedInput.draw(screen)
 
-            screen.blit(font.render("Number of Lanes:", True, (0, 0, 0)), (50, 255))
+            screen.blit(font.render("Number of Lanes:", True, (0, 0, 0)), (50, 355))
             numOfLanesInput.draw(screen)
 
             if chooseFileButton.draw(screen):
@@ -82,15 +77,13 @@ class SimulatorManager():
                     selectedFilePath = filePath
                     fileNameLabel = filePath.split('/')[-1]
                         
-            # Display the selected file name
-            screen.blit(font.render(fileNameLabel, True, (0, 0, 0)), (chooseFileButton.rect.right + 20, chooseFileButton.rect.y + 5))
+            screen.blit(font.render(fileNameLabel, True, (0, 0, 0)), (chooseFileButton.rect.right + 30, chooseFileButton.rect.y + 5))
 
             if startButton.draw(screen):
                 if selectedRoadIndex is not None and selectedFilePath is not None:
                     maxSpeed = maxSpeedInput.get_text()
                     numOfLanes = numOfLanesInput.get_text()
 
-                    # Input verification
                     if not maxSpeed.replace('.', '', 1).isdigit() or float(maxSpeed) <= 0:
                         errorMessage = "Max Speed must be a positive number!"
                     elif not numOfLanes.isdigit() or int(numOfLanes) < 1 or (selectedRoadIndex == 0 and int(numOfLanes) > 2) or (selectedRoadIndex > 0 and int(numOfLanes) != 1):
@@ -101,7 +94,7 @@ class SimulatorManager():
                     errorMessage = "Please select a road and a file!"
 
             if errorMessage:
-                screen.blit(font.render(errorMessage, True, (255, 0, 0)), (100, 300))
+                screen.blit(font.render(errorMessage, True, (255, 0, 0)), (50, 405))
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
