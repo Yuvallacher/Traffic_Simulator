@@ -25,7 +25,7 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
         if playButton.draw(simulationWorld.screen):
             simulationWorld.simulationPaused = False
         if exitButton.draw(simulationWorld.screen):
-            simulationWorld.simulationRunning = False
+            pygame.event.post(pygame.event.Event(pygame.QUIT))
         if restartButton.draw(simulationWorld.screen):
             simulationWorld, dataManager, nextStatUpdate = SimulatorManager.initialize_simulation(simulationManager)
             simulationWorld.hazards = hazards
@@ -65,6 +65,7 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                dataManager.update_stats(simulationWorld.vehiclesManager.vehicles, simulationManager.roadType, finalCall=True)
                 simulationWorld.simulationRunning = False
             if event.type == pygame.KEYDOWN:
                 if selectedSign is not None and selectedSign.inputActive:

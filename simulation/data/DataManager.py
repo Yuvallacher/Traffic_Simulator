@@ -15,7 +15,7 @@ class DataManager:
         self.statsData = pd.DataFrame(columns=['Time Stamp', 'Average Speed', 'Density'])
         self.accidentsData = pd.DataFrame(columns=['Time Stamp', 'Vehicle Types', 'Speeds At Crash Time (km\h)', 'Accident ID'])
     
-    def update_stats(self, vehicles, roadType : str):
+    def update_stats(self, vehicles, roadType : str, finalCall=False):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         totalSpeed, count, totalVehiclesInJunction, totalVehiclesInRoundabout = 0, 0, 0, 0
         roadDirectionStats = {}
@@ -32,7 +32,7 @@ class DataManager:
                     totalVehiclesInRoundabout += 1
                     vehicle.countForRoundaboutData = False
                 
-                key = (vehicle.roadIndex, vehicle.directionIndex)
+                key = (vehicle.roadIndex + 1, vehicle.directionIndex)
                 if key not in roadDirectionStats:
                     roadDirectionStats[key] = {'total_speed': 0, 'count': 0}
 
@@ -57,7 +57,10 @@ class DataManager:
         })
 
         self.statsData = pd.concat([self.statsData, new_data], ignore_index=True)
-        threading.Thread(self.export_to_excel(self.roadType, self.numOfLanes))
+        if finalCall:
+            self.export_to_excel(self.roadType, self.numOfLanes)
+        else:
+            threading.Thread(self.export_to_excel(self.roadType, self.numOfLanes))
         
     
     def log_accident(self, vehicle_1_Type : str, vehicle_2_Type : str, vehicle_1_Speed : float, vehicle_2_Speed : float, accidentID : int):
