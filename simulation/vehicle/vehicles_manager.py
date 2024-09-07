@@ -36,7 +36,7 @@ class VehiclesManager:
                                 space_available = True
                                 for vehicle in self.vehicles:
                                     if vehicle.roadIndex == roadIndex and vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.currentLaneIndex == direction.index(lane):
-                                        if vehicle.targetPositionIndex <= World.SPAWN_RATE:
+                                        if vehicle.targetPositionIndex <= World.SPAWN_RATE + (10 - road.density):
                                             space_available = False
                                             break
                                 if space_available:

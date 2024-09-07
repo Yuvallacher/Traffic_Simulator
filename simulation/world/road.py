@@ -12,6 +12,7 @@ class Road:
         self.imagesPositions = imagesPositions
         self.junctions = junctions
         self.roundabouts = roundabouts
+        self.density : int
  
         
     def get_target_position(self, directionIndex : int, laneIndex : int, currentTargetPositionIndex : int) -> Vector2:
