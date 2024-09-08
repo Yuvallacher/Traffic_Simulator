@@ -317,9 +317,9 @@ class Vehicle:
     def acceleration_for_only_hazard_ahead(self, hazardsAhead : list[Hazard], fps : int) -> float:
         closestHazard, distanceToHazardAhead = self.get_closest_high_priority_hazard(hazardsAhead)
         acceleration = closestHazard.affect_vehicle(self, distanceToHazardAhead)
-        if (closestHazard.type == 'speedLimit') or (closestHazard.type == 'trafficLight' and closestHazard.attributes["isGreenLight"]): #TODO think about yellow light
+        if (closestHazard.type == 'speedLimit') or (closestHazard.type == 'trafficLight' and closestHazard.attributes["isGreenLight"]): 
             acceleration = self.acceleration_for_clear_road(fps)
-        if closestHazard.type == 'stopSign' or (closestHazard.type == 'trafficLight' and closestHazard.attributes["isRedLight"]): #TODO think about yellow light:
+        if closestHazard.type == 'stopSign' or (closestHazard.type == 'trafficLight' and closestHazard.attributes["isRedLight"]):
             if distanceToHazardAhead > 40:
                 acceleration = self.acceleration_for_clear_road(fps)
         if closestHazard.type == 'trafficLight' and closestHazard.attributes["isYellowLight"]:

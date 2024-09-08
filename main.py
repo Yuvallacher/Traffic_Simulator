@@ -29,8 +29,10 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
         if exitButton.draw(simulationWorld.screen):
             pygame.event.post(pygame.event.Event(pygame.QUIT))
         if restartButton.draw(simulationWorld.screen):
+            trafficLightManager = simulationWorld.trafficlightManager
             simulationWorld, dataManager, nextStatUpdate = SimulatorManager.initialize_simulation(simulationManager)
             simulationWorld.hazards = hazards
+            simulationWorld.trafficlightManager = trafficLightManager
             for hazard in simulationWorld.hazards:
                 if hazard.nearJunction:
                     simulationWorld.roads[hazard.roadIndex].update_road_and_direction_priority(hazard.junctionID, hazard.roadIndex, hazard.directionIndex, hazard.id, False)
@@ -38,12 +40,11 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
             simulationManager = SimulatorManager.select_road(simulationWorld.screen, simulationManager.filePath)
             simulationWorld, dataManager, nextStatUpdate = SimulatorManager.initialize_simulation(simulationManager)
             initiate_buttons_and_hazards(simulationManager.roadType == "junction")
-            simulationWorld.hazards = hazards           
+            simulationWorld.hazards = hazards
         
         VehicleDrawer.draw_vehicles(simulationWorld.vehiclesManager.vehicles, simulationWorld.screen)
-        simulationWorld.trafficlightManager.synchronize_traffic_lights(simulationWorld.FPS)
         for hazard in simulationWorld.hazards:
-            if isinstance(hazard, SpeedLimit):
+            if isinstance(hazard, SpeedLimit) or isinstance(hazard, TrafficLight):
                 hazard.draw(simulationWorld.screen)
             else:
                 simulationWorld.screen.blit(hazard.images[0], hazard.rect)
@@ -54,6 +55,7 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
             simulationWorld.vehiclesManager.add_vehicles(simulationWorld, simulationWorld.screen)
             simulationWorld.vehiclesManager.updateCarPos(simulationWorld, dataManager, simulationWorld.accidentManager)
             simulationWorld.vehiclesManager.remove_vehicles(simulationWorld.roads)
+            simulationWorld.trafficlightManager.synchronize_traffic_lights(simulationWorld.FPS)
 
             current_time = pygame.time.get_ticks()
             if current_time >= nextStatUpdate:
