@@ -374,23 +374,12 @@ class Vehicle:
         for vehicle in vehiclesLeft:
             if (vehicle.inRoundabout or vehicle.exitingRoundabout) and roundaboutId == vehicle.roundaboutId:
                 if self.frontEdgeOfVehicle.distance_to(vehicle.location) < 170 * self.politenessCoefficient:
-                    # if not self.can_enter_roundabout_in_traffic_jam(vehicle):
                         canEnter = False
                         self.waitingToEnterRoundabout = True
                         break
-        # if self.can_enter_roundabout_in_traffic_jam(vehiclesLeft, vehiclesFront):
             canEnter = True        
         return canEnter
-    # === Added ===
-    
-    # def can_enter_roundabout_in_traffic_jam(self, vehicle : 'Vehicle'):
-    #     if vehicle.inRoundabout:
-    #         if vehicle.speed == 0 and self.location.distance_to(vehicle.location) > 15:
-    #             return True
-    #         else:
-    #             return False
-    #     else:
-    #         return True     
+
     def is_roundabout_in_traffic_jam(self, vehiclesLeft : list['Vehicle'], vehiclesFront : list['Vehicle'] ) ->bool:
         direction = Vector2(1, 0).rotate(-self.driveAngle)
         roundaboutLeftFov = self.create_fov_boundary(direction, -120, -30, 80)

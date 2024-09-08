@@ -70,7 +70,7 @@ class SimulatorManager():
 
                     roadDensityInputs = {}
                     for roadNum in range(1, roadDefaults[i]["numOfRoads"] + 1):
-                        roadDensityInputs[roadNum] = InputBox(300, 450 + (roadNum * 50), 140, 32, font, defaultText="3")  # Default density 3
+                        roadDensityInputs[roadNum] = InputBox(300, 450 + (roadNum * 50), 140, 32, font, defaultText="3") 
                     roadDensityMessage = "Choose road density on a scale of 1 to 5, with 5 being the most dense:"
 
                 if selectedRoadIndex == i:

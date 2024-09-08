@@ -126,8 +126,7 @@ class TrafficLight(Hazard):
             self.countdown = 8
         elif self.attributes["isYellowLight"]:
             self.countdown = 2
-        else: # self.attributes["isRedLight"]
-            self.countdown = 10
+
 
     def change_color(self):
         if self.attributes["isGreenLight"]:
@@ -139,3 +138,36 @@ class TrafficLight(Hazard):
         else: # self.attributes["isRedLight"]
             self.attributes["isRedLight"] = 0        
             self.attributes["isGreenLight"] = 1
+            
+            
+class TrafficLightsManager():
+    def __init__(self):
+        self.trafficLights : list[TrafficLight] = []
+        self.activeTrafficLight : TrafficLight = None
+        self.activeIndex : int = 0
+    
+    def add_traffic_light(self, trafficLight : TrafficLight):
+        if trafficLight not in self.trafficLights:
+            self.trafficLights.append(trafficLight)
+        if not self.activeTrafficLight:
+            self.activeTrafficLight = trafficLight
+            self.activeTrafficLight.countdownStarted
+        
+    def remove_traffic_light(self, trafficLight : TrafficLight):
+        if trafficLight in self.trafficLights:
+            self.trafficLights.remove(trafficLight)
+        if len(self.trafficLights) == 0:
+            self.activeTrafficLight = None
+
+    def synchronize_traffic_lights(self, fps : int):
+        if self.activeTrafficLight is not None:
+            if self.activeTrafficLight.countdownStarted:
+                self.activeTrafficLight.countdown -= 1 / fps
+                if self.activeTrafficLight.countdown <= 0:
+                    self.activeTrafficLight.change_color()
+                    self.activeTrafficLight.start_count_down()
+                    if self.activeTrafficLight.attributes["isRedLight"]:
+                        self.activeTrafficLight.countdownStarted = False
+                        self.activeIndex = (self.activeIndex + 1) % len(self.trafficLights)
+                        self.activeTrafficLight = self.trafficLights[self.activeIndex]
+                        self.activeTrafficLight.countdownStarted
