@@ -2,6 +2,7 @@ from simulation.data.DataManager import DataManager
 from drawings.vehicle_drawer import VehicleDrawer
 from simulation.world.hazard import SpeedLimit
 from simulation.world.hazard import StopSign
+from simulation.world.hazard import TrafficLight
 from simulation.world.hazard import Hazard
 from simulation.world.World import World
 from simulation.simulationManager import SimulatorManager
