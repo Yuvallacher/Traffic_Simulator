@@ -95,22 +95,53 @@ class StopSign(Hazard):
 class TrafficLight(Hazard):
     def __init__(self, location: Vector2, roadIndex: int, directionIndex: int, images: list[Surface], color : list[bool]):
         super().__init__("trafficLight", location, roadIndex, directionIndex, images, {"isRedLight": color[0], "isYellowLight": color[1], "isGreenLight": color[2]}, priority=2)
-        
+        self.countdown : int
+        self.countdownStarted = False
+
     def affect_vehicle(self, vehicle, distance: float) -> float:
         if self.attributes["isRedLight"]:
             return vehicle.decelerate_to_stop(distance, vehicle.speed)
         elif self.attributes["isYellowLight"]:
-            pass
+            carSpeedMps = vehicle.speed * 60 / 5
+            carSpeedKph = carSpeedMps * 3600 / 1000
+            if distance > 50 and carSpeedKph < 40:
+                return vehicle.decelerate_to_stop(distance, vehicle.speed)
+            else:
+                return vehicle.acceleration_for_clear_road(60)
         elif self.attributes["isGreenLight"]:
             return -10
         
     def check_hazard_rule_completion(self, vehicle, distance: float) -> bool:
         if distance <= 25:
-            if self.attributes["isGreenLight"]:
-                return True
-            elif self.attributes["isYellowLight"]:
-                pass
-            else: # self.attributes["isRedLight"]
-                return False
+            return self.attributes["isGreenLight"]
         else:
             return False
+
+
+    def draw(self, screen):
+        if self.attributes["isGreenLight"]:
+            screen.blit(self.images[2], self.rect)
+        elif self.attributes["isYellowLight"]:
+            screen.blit(self.images[1], self.rect)
+        else: # self.attributes["isRedLight"]
+            screen.blit(self.images[0], self.rect)
+
+
+    def start_count_down(self):
+        if self.attributes["isGreenLight"]:
+            self.countdown = 8
+        elif self.attributes["isYellowLight"]:
+            self.countdown = 2
+        else: # self.attributes["isRedLight"]
+            self.countdown = 10
+
+    def change_color(self):
+        if self.attributes["isGreenLight"]:
+            self.attributes["isGreenLight"] = 0
+            self.attributes["isYellowLight"] = 1
+        elif self.attributes["isYellowLight"]:
+            self.attributes["isYellowLight"] = 0
+            self.attributes["isRedLight"] = 1
+        else: # self.attributes["isRedLight"]
+            self.attributes["isRedLight"] = 0        
+            self.attributes["isGreenLight"] = 1
