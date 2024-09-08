@@ -16,7 +16,7 @@
     },
 
     "junction_road": {
-        "images_path":["pictures\\roadPictures\\junctionRoad.jpg"],
+        "images_path":["pictures\\roadPictures\\junctionRoad.png"],
         "images_scales":[ 
                             [1280, 714]
                         ],
@@ -92,7 +92,7 @@
     },
 
     "roundabout_road": {
-        "images_path":["pictures\\roadPictures\\roundaboutRoad.jpg"],
+        "images_path":["pictures\\roadPictures\\roundaboutRoad.png"],
         "images_scales":[ 
                             [1280, 714]
                         ],

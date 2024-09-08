@@ -1,8 +1,7 @@
-#from simulation.world.Point import Point
-import json
-import pygame.image
-from pygame.math import Vector2
 from pygame.surface import Surface
+from pygame.math import Vector2
+import pygame.image
+import json
 
 class Road:
     def __init__(self, startingNumberOfLanes : int, allLanesInRoad : list[list['Lane']], laneImages : list[Surface], imagesPositions : list[list[int]], junctions : dict[int, 'Junction'] = None, roundabouts : dict[int, 'Roundabout'] = None):
@@ -13,6 +12,7 @@ class Road:
         self.imagesPositions = imagesPositions
         self.junctions = junctions
         self.roundabouts = roundabouts
+        self.density : int
  
         
     def get_target_position(self, directionIndex : int, laneIndex : int, currentTargetPositionIndex : int) -> Vector2:
@@ -209,14 +209,12 @@ class Road:
             self.paths = paths
             self.priorities : dict[tuple[str, str], list[int, list[int]]] = {}
             self.id = id
-            # === Added ===
             self.queue = []
         
         def initiate_priorities(self, roadIndex):
             for directionIndex in self.paths.keys():
                 self.priorities[(roadIndex, directionIndex)] = [2, []]
         
-        # === Added ===
         def add_to_queue(self, vehicleId : int):
             self.queue.append(vehicleId)
 
@@ -251,7 +249,7 @@ class RoadBuilder:
         return roads
         
     @staticmethod
-    def straight_road_read_lanes_from_file(startingNumberOfLanes : int) -> list[Road]: # TODO implement and move to inheriting classes
+    def straight_road_read_lanes_from_file(startingNumberOfLanes : int) -> list[Road]:
         with open("jsons\\road.json", 'r') as file:
             data = json.load(file)
 
@@ -268,9 +266,9 @@ class RoadBuilder:
                     lane = Road.Lane(path)
 
                     if idx % 2 == 0:
-                        lanesDirection1.append(lane) # (left-to-right driving direction)
+                        lanesDirection1.append(lane) 
                     else:
-                        lanesDirection2.append(lane) # (right-to-left driving direction)
+                        lanesDirection2.append(lane) 
             images, imagesPos = RoadBuilder.load_lane_images(roadData)
             roadDirections = [lanesDirection1, lanesDirection2]
             road = Road(startingNumberOfLanes, roadDirections, images, imagesPos)
@@ -280,7 +278,7 @@ class RoadBuilder:
     
 
     @staticmethod
-    def load_lane_images(roadData : dict) -> list[list]: # TODO implement and move to inheriting classes
+    def load_lane_images(roadData : dict) -> list[list]:
         imagesPaths = roadData["images_path"]
         imagesScales = roadData["images_scales"]
         imagesPos = roadData["image_pos"]
@@ -291,7 +289,7 @@ class RoadBuilder:
 
 
     @staticmethod
-    def junction_road_read_lanes_from_file(startingNumberOfLanes : int, roadName : str) -> list[Road]: # TODO implement and move to inheriting classes
+    def junction_road_read_lanes_from_file(startingNumberOfLanes : int, roadName : str) -> list[Road]:
         """
         reads and builds the roads for the junction-type scenario
         """
@@ -304,14 +302,12 @@ class RoadBuilder:
 
             lanesDirection1 = []
             lanesDirection2 = []
-            # imagesScales = roadData["images_scales"]
-            # imagesPaths = roadData["images_path"]
-            # imagesPos = roadData["image_pos"]
+            
             images, imagesPos = RoadBuilder.load_lane_images(roadData)
             
             junctions = RoadBuilder.read_junctions_from_json(roadData)
             roadIndex = 0
-            #TODO add a way to limit user - only 1 or 2 lanes in each direction           
+             
             for idx, lane_coordinates in enumerate(lanesData):
                 path = [Vector2(coord) for coord in lane_coordinates]
                 spawnPoint = False if idx == 5 else True
@@ -332,18 +328,6 @@ class RoadBuilder:
                     
             return roadsList  
 
-    
-    # @staticmethod
-    # def read_junctions_from_json(data) -> dict[int, Road.Junction]:
-    #     """
-    #         parses json to return list of junction dicts
-    #     """
-    #     junctionDict : dict[int, Road.Junction] = {}
-        
-    #     for id, key in enumerate(data["junction_road"]["junctions"].keys()):
-    #         junctionDict[id] = (Road.Junction(data["junction_road"]["junctions"][key], id))
-                       
-    #     return junctionDict
     
     @staticmethod
     def read_junctions_from_json(roadData) -> dict[int, Road.Junction]:
@@ -370,7 +354,6 @@ class RoadBuilder:
                     relevantJunction = Road.Junction(junction.paths[key], junction.id)
                     relevantJunction.initiate_priorities(key)
                     relevantJunctions[junction.id] = relevantJunction
-        
         return relevantJunctions
     
     @staticmethod
@@ -388,7 +371,6 @@ class RoadBuilder:
             
             junctions = RoadBuilder.read_junctions_from_json(roadData)
             roadIndex = 0
-            #TODO add a way to limit user - only 1 or 2 lanes in each direction           
             for idx, lane_coordinates in enumerate(lanesData):
                 path = [Vector2(coord) for coord in lane_coordinates]
                 spawnPoint = False if idx == 5 else True

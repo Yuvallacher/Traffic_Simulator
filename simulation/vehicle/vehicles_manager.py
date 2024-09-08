@@ -7,18 +7,16 @@ from simulation.vehicle.Vehicle import Truck
 from simulation.world.road import Road
 import simulation.data
 from pygame.math import Vector2
-from pygame import Surface
 from drawings.vehicle_drawer import VehicleDrawer
 import random
 import math
 
-TRUCK_PROBABILITY = 0.1
-
 class VehiclesManager:
     
-    def __init__(self, max_number_of_cars) -> None:
+    def __init__(self, maxNumberOfCars : int, truckPercentage : float) -> None:
         self.vehicles : list[Vehicle] = []
-        self.maxNumOfCars = max_number_of_cars
+        self.maxNumOfCars = maxNumberOfCars
+        self.truckPercentage = truckPercentage
         self.vehicleID = 1
 
 
@@ -33,11 +31,11 @@ class VehiclesManager:
                 for lane in direction:
                     if lane.spawnPoint:
                         if len(self.vehicles) < self.maxNumOfCars:
-                            if random.uniform(0, 1) >= 1 / (simulationWorld.FREQUENCY * 10):
+                            if random.random() >= 1 / (simulationWorld.FREQUENCY * 10):
                                 space_available = True
                                 for vehicle in self.vehicles:
                                     if vehicle.roadIndex == roadIndex and vehicle.directionIndex == allLanesInRoad.index(direction) and vehicle.currentLaneIndex == direction.index(lane):
-                                        if vehicle.targetPositionIndex <= World.SPAWN_RATE:
+                                        if vehicle.targetPositionIndex <= World.SPAWN_RATE + (10 - road.density):
                                             space_available = False
                                             break
                                 if space_available:
@@ -46,8 +44,8 @@ class VehiclesManager:
                                     driveAngle = -math.degrees(math.atan2(initialDirection.y, initialDirection.x))
                                     directionIndex = allLanesInRoad.index(direction)
                                     laneIndex = direction.index(lane)
-                                    car_probability = random.uniform(0, 1)
-                                    if car_probability >= TRUCK_PROBABILITY:
+                                    car_probability = random.random()
+                                    if car_probability >= self.truckPercentage:
                                         image = VehicleDrawer.get_car_image()
                                         newVehicle = Car(self.vehicleID, screen, vehicleCoordinates, roadIndex, directionIndex, laneIndex, driveAngle, image, speed=simulationWorld.maxSpeed)
                                     else:
@@ -61,7 +59,7 @@ class VehiclesManager:
                                 self.vehicleID += 1
                         
                         
-    def updateCarPos(self, simulationWorld : World, dataManager : simulation.data.DataManager, accidentManager : simulation.data.Accident): #TODO probably move to a different place
+    def updateCarPos(self, simulationWorld : World, dataManager : simulation.data.DataManager, accidentManager : simulation.data.Accident):
         for vehicle in self.vehicles:
             vehicleRoad = simulationWorld.get_vehicle_road(vehicle.roadIndex)
             vehicle.drive(self.vehicles, simulationWorld, dataManager, accidentManager, vehicleRoad)

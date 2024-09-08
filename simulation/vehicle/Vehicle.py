@@ -32,7 +32,7 @@ class Vehicle:
         self.politeness : float
         self.awareness : float
         self.politenessCoefficient = normal(POLITENESS_AVG, POLITENESS_STANDART_DEVIATION)
-        self.awarenessCoefficient = normal(AWARENESS_AVG, AWARENESS_STANDART_DEVIATION) #TODO use negatively skewed normal distribution
+        self.awarenessCoefficient = normal(AWARENESS_AVG, AWARENESS_STANDART_DEVIATION)
         self.weight = weight
         self.width = width
         self.length = length
@@ -49,6 +49,8 @@ class Vehicle:
         self.inJunction = False
         self.shouldCountForJunctionData = True
         self.countForJunctionData = False
+        self.shouldCountForRoundaboutData = True
+        self.countForRoundaboutData = False
         self.desiredJunctionRoadIndex = self.roadIndex
         self.desiredJunctionsDirectionIndex = self.directionIndex
         self.turnDirection : str = ""
@@ -75,7 +77,7 @@ class Vehicle:
         self.rect = image.get_rect()
         self.mask = mask.from_surface(self.originalImage) 
         self.update_vehicle_edges_and_corners()
-        self.screen = screen #TODO DELETEEEEEEEEEEEEEEEEEEEEEEEE
+        self.screen = screen #TODO DELETEEEEEEEEEEEEEEEEEEEEEEEE - for debug purposes!!!
         self.roundaboutTargetPositionIndex = 0
         self.desiredRoadIndex = self.roadIndex
         self.desiredDirectionIndex = self.directionIndex
@@ -197,6 +199,7 @@ class Vehicle:
     def exiting_roundabout(self, road : Road, maxSpeed : float) -> Vector2:
         nextTargetPosition = road.get_next_target_position_of_roundabout_exit(self.roundaboutId, self.roundaboutTargetPositionIndex, self.desiredRoadIndex, self.desiredDirectionIndex)
         if road.is_end_of_roundabout_exit(self.roundaboutId, nextTargetPosition, self.desiredRoadIndex, self.desiredDirectionIndex):
+            self.countForRoundaboutData = True
             self.targetPositionIndex = road.get_roundabout_to_road_index(self.roundaboutId, self.desiredRoadIndex, self.desiredDirectionIndex)
             self.roadIndex = int(self.desiredRoadIndex)
             self.directionIndex = int(self.desiredDirectionIndex)
@@ -729,11 +732,7 @@ class Vehicle:
                         surroundings['hazards_ahead'].append(hazard)       
 
         if not self.enterJunction and not self.inRoundabout and not self.enteringRoundabout:
-            # nextTargetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex + 1)
-            # if not road.is_roundabout_entry_point(nextTargetPosition, self.directionIndex)[0]:
             surroundings['vehicle_ahead'] = self.get_closest_vehicle_on_same_road(surroundings['vehicles_front'], self.desiredLaneIndex, 'front', checkAllLanes=True)
-            # else:
-            #     surroundings['vehicle_ahead'] = self.get_closest_vehicle_in_front_fov(surroundings['vehicles_front'])
         else:
             surroundings['vehicle_ahead'] = self.get_closest_vehicle_in_front_fov(surroundings['vehicles_front'])
         return surroundings
@@ -760,7 +759,6 @@ class Vehicle:
         otherVehicle.speed = 0
         otherVehicle.desiredSpeed = 0
 
-    #TODO move to calculations ?
     def create_fov_boundary(self, direction : Vector2, leftAngle : float, rightAngle : float, fovDistance : int):
         left_boundary = direction.rotate(leftAngle) * fovDistance
         right_boundary = direction.rotate(rightAngle) * fovDistance
