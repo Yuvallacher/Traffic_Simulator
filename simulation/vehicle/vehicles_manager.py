@@ -1,13 +1,13 @@
-import simulation.data.Accident
-import simulation.data.DataManager
-from simulation.world.World import World
-from simulation.vehicle.Vehicle import Vehicle
-from simulation.vehicle.Vehicle import Car
-from simulation.vehicle.Vehicle import Truck
-from simulation.world.road import Road
-import simulation.data
-from pygame.math import Vector2
 from drawings.vehicle_drawer import VehicleDrawer
+from simulation.vehicle.Vehicle import Vehicle
+from simulation.vehicle.Vehicle import Truck
+from simulation.vehicle.Vehicle import Car
+from simulation.world.World import World
+from simulation.world.road import Road
+import simulation.data.DataManager
+import simulation.data.Accident
+from pygame.math import Vector2
+import simulation.data
 import random
 import math
 

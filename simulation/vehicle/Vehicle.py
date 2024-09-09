@@ -48,12 +48,10 @@ class Vehicle:
         self.junctionTargetPositionIndex = 0
         self.enterJunction = False
         self.inJunction = False
-        self.timeWaitedToEnterJunction : float
+        self.timeWaitedToEnterJunction : float = None
         self.countForJunctionData = False
         self.countForJunctionTimeData = False
-        self.timeWaitedToEnterRoundabout : float
         self.countForRoundaboutData = False
-        self.countForRoundaboutTimeData = False
         self.desiredJunctionRoadIndex = self.roadIndex
         self.desiredJunctionsDirectionIndex = self.directionIndex
         self.turnDirection : str = ""
@@ -80,7 +78,7 @@ class Vehicle:
         self.rect = image.get_rect()
         self.mask = mask.from_surface(self.originalImage) 
         self.update_vehicle_edges_and_corners()
-        self.screen = screen #TODO DELETEEEEEEEEEEEEEEEEEEEEEEEE - for debug purposes!!!
+        self.screen = screen # for debug purposes
         self.roundaboutTargetPositionIndex = 0
         self.desiredRoadIndex = self.roadIndex
         self.desiredDirectionIndex = self.directionIndex
@@ -169,7 +167,7 @@ class Vehicle:
         if self.junctionID == 0:
             self.timeWaitedToEnterJunction = time.time()
         road.junctions[self.junctionID].add_to_queue(self.id)
-        self.set_desired_speed(maxSpeed*0.65)
+        self.set_desired_speed(maxSpeed*0.75)
     
     
     def check_if_can_enter_roundabout(self, nextTargetPosition : Vector2, road : Road, allHazards : dict ):
@@ -183,7 +181,6 @@ class Vehicle:
         if isRoundaboutEntryPoint:
             self.enteringRoundabout = True
             self.draw_roundabout_exit_choice(road, self.roundaboutId)
-            # self.roundaboutId = roundaboutId
           
     
     def entering_roundabout(self, road : Road, maxSpeed: float, allHazards : dict) -> Vector2:
@@ -192,7 +189,7 @@ class Vehicle:
             self.roundaboutTargetPositionIndex = road.get_roundabout_entering_index(self.roundaboutId, self.directionIndex)
             self.inRoundabout = True
             self.enteringRoundabout = False
-            self.set_desired_speed(maxSpeed*0.65)
+            self.set_desired_speed(maxSpeed*0.6)
         return nextTargetPosition
     
     
@@ -239,55 +236,14 @@ class Vehicle:
                 self.timeWaitedToEnterJunction = time.time() - self.timeWaitedToEnterJunction
                 self.countForJunctionTimeData = True
             nextTargetPosition = road.get_target_position_junction(self.junctionID, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.junctionTargetPositionIndex)
-            self.speed = 0 #TODO cahnge to a more gradient stop
+            self.speed = 0
         return nextTargetPosition
     
     
     def get_clear_road_status(self, vehicleAhead : 'Vehicle', hazardsAhead : list[Hazard]) -> list[bool, bool]:
         return vehicleAhead is not None, len(hazardsAhead) != 0
     
-    
-    # def calculate_acceleration(self, allHazards : dict, politeness : int, fps : int, road : Road) -> float:
-    #     # === Added ===
-    #     isVehicleAhead, isHazardAhead = self.get_clear_road_status(allHazards['vehicle_ahead'], allHazards['hazards_ahead'])
-    #     if not isVehicleAhead and not isHazardAhead:
-    #         if self.stoppingPoint is not None:
-    #             if self.can_enter_roundabout(road, allHazards['vehicles_left'], allHazards['vehicles_front'], self.roundaboutId):
-    #                 self.canEnterRoundabout = True
-    #                 acceleration = self.acceleration_for_clear_road(fps)
-    #             else:
-    #                 distanceFromStoppingPoint = self.location.distance_to(self.stoppingPoint)
-    #                 acceleration = self.decelerate_to_stop(distanceFromStoppingPoint, self.speed)      
-    #         else:            
-    #             acceleration = self.acceleration_for_clear_road(fps)
-    #     elif isVehicleAhead and not isHazardAhead:
-    #         if self.stoppingPoint is not None:
-    #             if allHazards['vehicle_ahead'].inRoundabout:
-    #                 if self.can_enter_roundabout(road, allHazards['vehicles_left'], allHazards['vehicles_front'], self.roundaboutId):
-    #                     self.canEnterRoundabout = True
-    #                     acceleration = self.acceleration_for_only_vehicle_ahead(allHazards['vehicle_ahead'], politeness, fps)
-    #                 else:
-    #                     distanceFromStoppingPoint = self.location.distance_to(self.stoppingPoint)
-    #                     acceleration = self.decelerate_to_stop(distanceFromStoppingPoint, self.speed)
-    #             else:
-    #                 acceleration = self.acceleration_for_only_vehicle_ahead(allHazards['vehicle_ahead'], politeness, fps)        
-    #         else:
-    #             if self.enteringRoundabout:
-    #                 if self.can_enter_roundabout(road, allHazards['vehicles_left'], allHazards['vehicles_front'], self.roundaboutId) or self.canEnterRoundabout or self.is_roundabout_in_traffic_jam(allHazards['vehicles_left'], allHazards['vehicles_front']):
-    #                     acceleration = self.acceleration_for_only_vehicle_ahead(allHazards['vehicle_ahead'], politeness, fps)
-    #                     self.canEnterRoundabout = True
-    #                 else:
-    #                     self.speed = 0
-    #                     acceleration = 0    
-    #             else:    
-    #                 acceleration = self.acceleration_for_only_vehicle_ahead(allHazards['vehicle_ahead'], politeness, fps)
-    #     elif not isVehicleAhead and isHazardAhead:
-    #         acceleration = self.acceleration_for_only_hazard_ahead(allHazards['hazards_ahead'], fps)
-    #     else: # isVehicleAhead and isHazardAhead
-    #         acceleration = self.acceleration_for_vehicle_and_hazard(allHazards['vehicle_ahead'], allHazards['hazards_ahead'], politeness, fps)
 
-    #     return acceleration
-    
     def calculate_acceleration(self, allHazards : dict, politeness : int, fps : int, road : Road) -> float:
         # === Added ===
         isVehicleAhead, isHazardAhead = self.get_clear_road_status(allHazards['vehicle_ahead'], allHazards['hazards_ahead'])
@@ -316,7 +272,7 @@ class Vehicle:
                         acceleration = self.acceleration_for_only_vehicle_ahead(allHazards['vehicle_ahead'], politeness, fps)
                     else:
                         self.speed = 0
-                        acceleration = 0    
+                        acceleration = 0
                 else:    
                     acceleration = self.acceleration_for_only_vehicle_ahead(allHazards['vehicle_ahead'], politeness, fps)
         elif not isVehicleAhead and isHazardAhead:
@@ -408,6 +364,7 @@ class Vehicle:
     def can_enter_roundabout(self, road : Road, vehiclesLeft : list['Vehicle'], vehiclesFront : list['Vehicle'], roundaboutId : int) -> bool:
         direction = Vector2(1, 0).rotate(-self.driveAngle)
         rightRoundaboutEnterFov = self.create_fov_boundary(direction, 10, 60, 50)
+        # ========== for debug purposes ==========#
         # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + rightRoundaboutEnterFov[0]), 1)
         # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + rightRoundaboutEnterFov[1]), 1)
         canEnter = True
@@ -425,7 +382,6 @@ class Vehicle:
                         canEnter = False
                         self.waitingToEnterRoundabout = True
                         break
-            canEnter = True        
         return canEnter
 
     def is_roundabout_in_traffic_jam(self, vehiclesLeft : list['Vehicle'], vehiclesFront : list['Vehicle'] ) ->bool:
@@ -433,6 +389,7 @@ class Vehicle:
         roundaboutLeftFov = self.create_fov_boundary(direction, -120, -30, 80)
         roundaboutFrontRightFov = self.create_fov_boundary(direction, -30, 45, 70)
         vehiclesInLeftToCheck = [vehicle for vehicle in vehiclesLeft if self.is_object_in_fov(vehicle.corners, roundaboutLeftFov[0], roundaboutLeftFov[1], 80)]
+        # ========== for debug purposes ==========#
         # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + roundaboutLeftFov[0]), 1)
         # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + roundaboutLeftFov[1]), 1)
         vehiclesInLeftInTrafficJam = False if False in [vehicle.speed < 0.01 for vehicle in vehiclesInLeftToCheck] else True
@@ -597,9 +554,6 @@ class Vehicle:
             rightLaneIndex = road.get_right_adjacent_lane_index(self.directionIndex, self.currentLaneIndex)
             if leftLaneIndex is None and rightLaneIndex is None:
                 self.shouldSwitchLane = False
-            # elif leftLaneIndex is not None and rightLaneIndex is not None:
-            #     pass    # if speed > other vehicle speed: left
-            #             # else: right (keep right lane is a priority unless passing someone)
             elif leftLaneIndex == None: # can move only to the right lane
                 if self.switching_lane_decision_adjacent_lane(vehicleAhead, vehiclesInFront, rightLaneIndex):
                     self.check_for_space_in_target_lane(vehiclesRight, vehicleAhead, rightLaneIndex, isLeftDirection=False)
@@ -641,7 +595,7 @@ class Vehicle:
 
         distance = direction.length()
         if distance > speed:
-            if speed == 0: # ===== Added ======
+            if speed == 0: 
                 self.location = self.location
             else: 
                 if direction != Vector2(0,0):   
@@ -737,8 +691,9 @@ class Vehicle:
                     surroundings['vehicles_left'].append(otherVehicle)
                 if self.is_object_in_fov(otherVehicle.corners, rightSideFov[0], rightSideFov[1], 200):
                     surroundings['vehicles_right'].append(otherVehicle)
-            
-        # drawings of fovs - DELETE LATER
+        
+        # ========== for debug purposes ==========#
+        # drawings of fovs
         # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + frontFov[0]), 1)
         # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + frontFov[1]), 1)
         
@@ -748,7 +703,7 @@ class Vehicle:
         # line(self.screen, (0, 255, 0), self.leftEdgeOfVehicle, (self.leftEdgeOfVehicle + leftSideFov[0]), 1)
         # line(self.screen, (0, 255, 0), self.leftEdgeOfVehicle, (self.leftEdgeOfVehicle + leftSideFov[1]), 1)
         
-        #drawing corners of vehicle - DELETE LATER
+        #drawing corners of vehicle
         # line(self.screen, (255, 255, 0), self.backRightCorner, self.backLeftCorner, 1)
         # line(self.screen, (255, 255, 0), self.backLeftCorner, self.frontLeftCorner, 1)
         # line(self.screen, (255, 255, 0), self.frontLeftCorner, self.frontRightcorner, 1)

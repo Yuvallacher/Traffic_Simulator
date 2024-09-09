@@ -30,10 +30,11 @@ class VehicleDrawer:
     def draw_vehicles(vehicles : list[Vehicle], screen):
         for vehicle in vehicles:
             screen.blit(vehicle.rotatedImage.convert_alpha(), vehicle.rect.topleft)
-                
+            # ========== for debug purposes ==========#
             # pygame.draw.rect(screen, (0, 255, 0), vehicle.rect, 2)
             # VehicleDrawer.draw_hitbox(screen, vehicle)
 
+    # ========== for debug purposes ==========#
     # @staticmethod
     # def draw_hitbox(screen , vehicle : 'Vehicle'):
     #     # Create a surface with the same dimensions as the mask

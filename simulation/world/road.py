@@ -227,7 +227,7 @@ class Road:
                 return self.queue.index(vehicleId)
             return -1
 
-    #======== class Junction ========#
+    #======== class Roundabout ========#
     class Roundabout:
         def __init__(self, path : list[Vector2], entryPaths : dict, exitPaths : dict,  id : int):
             self.path = path

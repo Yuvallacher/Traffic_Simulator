@@ -112,7 +112,43 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     if activeSign is not None:
-                        snap_hazard_to_spot(activeSign)
+                        mousePosAsVector = Vector2(pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1])
+                        closestPoint = simulationWorld.search_closest_point_in_roads(mousePosAsVector)
+                        if closestPoint:
+                            if activeSign.priority == 2:
+                                if activeSign.nearJunction:
+                                    simulationWorld.roads[activeSign.roadIndex].update_road_and_direction_priority(activeSign.junctionID, activeSign.roadIndex, activeSign.directionIndex, activeSign.id, True)
+                                if closestPoint["nearJunction"]:
+                                    simulationWorld.roads[closestPoint["roadIndex"]].update_road_and_direction_priority(closestPoint["junctionID"], closestPoint["roadIndex"], closestPoint["directionIndex"], activeSign.id, False)
+                                    activeSign.nearJunction = True
+                                    activeSign.junctionID = closestPoint["junctionID"]
+                                else:
+                                    activeSign.nearJunction = False
+                                    activeSign.junctionID = None
+                            vector = closestPoint["coordinate"] - closestPoint["nextCoordinate"]
+                            midpoint = (closestPoint["coordinate"] + closestPoint["nextCoordinate"]) / 2
+                            perpendicularVector =  Vector2(-vector.y, vector.x).normalize() * 15
+                            perpendicularStart = midpoint - perpendicularVector
+                            perpendicularEnd = midpoint + perpendicularVector 
+                            activeSign.rect.center = perpendicularStart + Vector2(0, -40)
+                            activeSign.set_new_position(closestPoint["roadIndex"], closestPoint["directionIndex"], closestPoint["coordinate"])
+                            activeSign.lineMidPoint = midpoint
+                            activeSign.lineStart = perpendicularStart
+                            activeSign.lineEnd = perpendicularEnd
+                            activeSign.drawLine = True                     
+                            if isinstance(activeSign, TrafficLight):
+                                simulationWorld.trafficlightManager.add_traffic_light(activeSign)
+                        else:
+                            if isinstance(activeSign, TrafficLight):
+                                simulationWorld.trafficlightManager.remove_traffic_light(activeSign)
+                            activeSign.drawLine = False
+                            if activeSign.nearJunction:
+                                if activeSign.priority == 2:
+                                    simulationWorld.roads[activeSign.roadIndex].update_road_and_direction_priority(activeSign.junctionID, activeSign.roadIndex, activeSign.directionIndex, activeSign.id, True)
+                                activeSign.nearJunction = False
+                                activeSign.junctionID = None
+                            activeSign.roadIndex = -1
+                            activeSign.directionIndex = -1
                         activeSign = None
 
         pygame.display.flip()
@@ -122,45 +158,6 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
     sys.exit()
 
 
-def snap_hazard_to_spot(activeSign : Hazard):
-    mousePosAsVector = Vector2(pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1])
-    closestPoint = simulationWorld.search_closest_point_in_roads(mousePosAsVector)
-    if closestPoint:
-        if activeSign.priority == 2:
-            if activeSign.nearJunction:
-                simulationWorld.roads[activeSign.roadIndex].update_road_and_direction_priority(activeSign.junctionID, activeSign.roadIndex, activeSign.directionIndex, activeSign.id, True)
-            if closestPoint["nearJunction"]:
-                simulationWorld.roads[closestPoint["roadIndex"]].update_road_and_direction_priority(closestPoint["junctionID"], closestPoint["roadIndex"], closestPoint["directionIndex"], activeSign.id, False)
-                activeSign.nearJunction = True
-                activeSign.junctionID = closestPoint["junctionID"]
-            else:
-                activeSign.nearJunction = False
-                activeSign.junctionID = None
-        vector = closestPoint["coordinate"] - closestPoint["nextCoordinate"]
-        midpoint = (closestPoint["coordinate"] + closestPoint["nextCoordinate"]) / 2
-        perpendicularVector =  Vector2(-vector.y, vector.x).normalize() * 15
-        perpendicularStart = midpoint - perpendicularVector
-        perpendicularEnd = midpoint + perpendicularVector 
-        activeSign.rect.center = perpendicularStart + Vector2(0, -40)
-        activeSign.set_new_position(closestPoint["roadIndex"], closestPoint["directionIndex"], closestPoint["coordinate"])
-        activeSign.lineMidPoint = midpoint
-        activeSign.lineStart = perpendicularStart
-        activeSign.lineEnd = perpendicularEnd
-        activeSign.drawLine = True                     
-        if isinstance(activeSign, TrafficLight):
-            simulationWorld.trafficlightManager.add_traffic_light(activeSign)
-    else:
-        if isinstance(activeSign, TrafficLight):
-            simulationWorld.trafficlightManager.remove_traffic_light(activeSign)
-        activeSign.drawLine = False
-        if activeSign.nearJunction:
-            if activeSign.priority == 2:
-                simulationWorld.roads[activeSign.roadIndex].update_road_and_direction_priority(activeSign.junctionID, activeSign.roadIndex, activeSign.directionIndex, activeSign.id, True)
-            activeSign.nearJunction = False
-            activeSign.junctionID = None
-        activeSign.roadIndex = -1
-        activeSign.directionIndex = -1
-    
 
 def initiate_buttons_and_hazards(isJunction : bool):
     global selectRoadButton, restartButton, pauseButton, playButton, exitButton
