@@ -49,8 +49,7 @@ class SimulatorManager():
         font = pygame.font.Font(None, 32)
         maxSpeedInput = InputBox(300, 300, 140, 32, font, defaultText="90")
         numOfLanesInput = InputBox(300, 350, 140, 32, font, defaultText="1")
-        truckPercentageInput = InputBox(300, 400, 140, 32, font, defaultText="10")  # Default 10% trucks
-
+        truckPercentageInput = InputBox(300, 400, 140, 32, font, defaultText="10") 
         roadDensityInputs = {}
 
         startButton = Button(550, 550, pygame.image.load("pictures\\buttonPictures\\startIcon.png").convert_alpha(), 0.3)
@@ -71,19 +70,18 @@ class SimulatorManager():
 
                     roadDensityInputs = {}
                     for roadNum in range(1, roadDefaults[i]["numOfRoads"] + 1):
-                        roadDensityInputs[roadNum] = InputBox(300, 450 + (roadNum * 50), 140, 32, font, defaultText="3")  # Default density 3
+                        roadDensityInputs[roadNum] = InputBox(300, 450 + (roadNum * 50), 140, 32, font, defaultText="3") 
                     roadDensityMessage = "Choose road density on a scale of 1 to 5, with 5 being the most dense:"
 
                 if selectedRoadIndex == i:
                     pygame.draw.rect(screen, (0, 0, 255), button.rect, 3)
 
-            screen.blit(font.render("Max Speed:", True, (0, 0, 0)), (50, 305))
+            screen.blit(font.render("Allowed Speed:", True, (0, 0, 0)), (50, 305))
             maxSpeedInput.draw(screen)
 
             screen.blit(font.render("Number of Lanes:", True, (0, 0, 0)), (50, 355))
             numOfLanesInput.draw(screen)
 
-            # Truck Percentage Label and Input
             screen.blit(font.render("Truck Percentage (%):", True, (0, 0, 0)), (50, 405))
             truckPercentageInput.draw(screen)
 
@@ -104,13 +102,12 @@ class SimulatorManager():
                 if selectedRoadIndex is not None and selectedFilePath is not None:
                     maxSpeed = maxSpeedInput.get_text()
                     numOfLanes = numOfLanesInput.get_text()
-                    truckPercentage = truckPercentageInput.get_text()  # Get truck percentage input
+                    truckPercentage = truckPercentageInput.get_text()  
 
-                    # Validate truck percentage
                     if not truckPercentage.replace('.', '', 1).isdigit() or not (0 <= float(truckPercentage) <= 100):
                         errorMessage = "Truck Percentage must be a number between 0 and 100!"
                     elif not maxSpeed.replace('.', '', 1).isdigit() or float(maxSpeed) <= 0:
-                        errorMessage = "Max Speed must be a positive number!"
+                        errorMessage = "Allowed Speed must be a positive number!"
                     elif not numOfLanes.isdigit() or int(numOfLanes) < 1 or (selectedRoadIndex == 0 and int(numOfLanes) > 2) or (selectedRoadIndex > 0 and int(numOfLanes) != 1):
                         errorMessage = "Number of Lanes must be 1 (or 2 for straight road)!"
                     else:
@@ -129,7 +126,7 @@ class SimulatorManager():
                                 float(maxSpeed), 
                                 selectedFilePath, 
                                 densities, 
-                                float(truckPercentage) / 100  # Pass truck percentage to SimulatorManager
+                                float(truckPercentage) / 100 
                             )
                 else:
                     errorMessage = "Please select a road and a file!"
@@ -146,13 +143,13 @@ class SimulatorManager():
 
                 maxSpeedInput.handle_event(event)
                 numOfLanesInput.handle_event(event)
-                truckPercentageInput.handle_event(event)  # Handle truck percentage input
+                truckPercentageInput.handle_event(event)  
                 for densityInput in roadDensityInputs.values():
                     densityInput.handle_event(event)
 
             maxSpeedInput.update()
             numOfLanesInput.update()
-            truckPercentageInput.update()  # Update truck percentage input
+            truckPercentageInput.update() 
             for densityInput in roadDensityInputs.values():
                 densityInput.update()
 

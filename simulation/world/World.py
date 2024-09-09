@@ -2,6 +2,7 @@ import pygame
 from simulation.data.Accident import AccidentManager
 from simulation.world.road import RoadBuilder
 from simulation.world.road import Road
+from simulation.world.hazard import TrafficLightsManager
 from simulation.world.hazard import Hazard
 
 class World:
@@ -39,6 +40,7 @@ class World:
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
         self.accidentManager = AccidentManager()
+        self.trafficlightManager = TrafficLightsManager()
 
     def set_vehicles_manager(self, vehiclesManager):
         self.vehiclesManager = vehiclesManager

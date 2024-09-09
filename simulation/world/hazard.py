@@ -89,24 +89,19 @@ class StopSign(Hazard):
 class TrafficLight(Hazard):
     def __init__(self, location: Vector2, roadIndex: int, directionIndex: int, images: list[Surface], color : list[bool]):
         super().__init__("trafficLight", location, roadIndex, directionIndex, images, {"isRedLight": color[0], "isYellowLight": color[1], "isGreenLight": color[2]}, priority=2)
-        self.countdown : int
+        self.countdown : int = 2
         self.countdownStarted = False
 
+
     def affect_vehicle(self, vehicle, distance: float) -> float:
-        if self.attributes["isRedLight"]:
-            return vehicle.decelerate_to_stop(distance, vehicle.speed)
-        elif self.attributes["isYellowLight"]:
-            carSpeedMps = vehicle.speed * 60 / 5
-            carSpeedKph = carSpeedMps * 3600 / 1000
-            if distance > 50 and carSpeedKph < 40:
-                return vehicle.decelerate_to_stop(distance, vehicle.speed)
-            else:
-                return vehicle.acceleration_for_clear_road(60)
-        elif self.attributes["isGreenLight"]:
+        if self.attributes["isGreenLight"]:
             return -10
+        else:
+            return vehicle.decelerate_to_stop(distance, vehicle.speed)
+
         
     def check_hazard_rule_completion(self, vehicle, distance: float) -> bool:
-        if distance <= 25:
+        if distance <= 10:
             return self.attributes["isGreenLight"]
         else:
             return False
@@ -124,18 +119,53 @@ class TrafficLight(Hazard):
     def start_count_down(self):
         if self.attributes["isGreenLight"]:
             self.countdown = 8
-        elif self.attributes["isYellowLight"]:
+        else:
             self.countdown = 2
-        else: # self.attributes["isRedLight"]
-            self.countdown = 10
+
 
     def change_color(self):
         if self.attributes["isGreenLight"]:
             self.attributes["isGreenLight"] = 0
             self.attributes["isYellowLight"] = 1
+            self.priority = 2
         elif self.attributes["isYellowLight"]:
             self.attributes["isYellowLight"] = 0
             self.attributes["isRedLight"] = 1
+            self.priority = 2
         else: # self.attributes["isRedLight"]
             self.attributes["isRedLight"] = 0        
             self.attributes["isGreenLight"] = 1
+            self.priority = 1
+            
+            
+class TrafficLightsManager():
+    def __init__(self):
+        self.trafficLights : list[TrafficLight] = []
+        self.activeTrafficLight : TrafficLight = None
+        self.activeIndex : int = 0
+    
+    def add_traffic_light(self, trafficLight : TrafficLight):
+        if trafficLight not in self.trafficLights:
+            self.trafficLights.append(trafficLight)
+        if not self.activeTrafficLight:
+            self.activeTrafficLight = trafficLight
+            self.activeTrafficLight.countdownStarted = True
+        
+    def remove_traffic_light(self, trafficLight : TrafficLight):
+        if trafficLight in self.trafficLights:
+            self.trafficLights.remove(trafficLight)
+        if len(self.trafficLights) == 0:
+            self.activeTrafficLight = None
+
+    def synchronize_traffic_lights(self, fps : int):
+        if self.activeTrafficLight is not None:
+            if self.activeTrafficLight.countdownStarted:
+                self.activeTrafficLight.countdown -= 1 / fps
+                if self.activeTrafficLight.countdown <= 0:
+                    self.activeTrafficLight.change_color()
+                    self.activeTrafficLight.start_count_down()
+                    if self.activeTrafficLight.attributes["isRedLight"]:
+                        self.activeTrafficLight.countdownStarted = False
+                        self.activeIndex = (self.activeIndex + 1) % len(self.trafficLights)
+                        self.activeTrafficLight = self.trafficLights[self.activeIndex]
+                        self.activeTrafficLight.countdownStarted = True
