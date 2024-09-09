@@ -11,6 +11,7 @@ from pygame import transform
 from pygame import Surface
 from pygame import mask
 import random
+import time
 import math
 from pygame.draw import line # for debug purposes only
 
@@ -47,10 +48,12 @@ class Vehicle:
         self.junctionTargetPositionIndex = 0
         self.enterJunction = False
         self.inJunction = False
-        self.shouldCountForJunctionData = True
+        self.timeWaitedToEnterJunction : float
         self.countForJunctionData = False
-        self.shouldCountForRoundaboutData = True
+        self.countForJunctionTimeData = False
+        self.timeWaitedToEnterRoundabout : float
         self.countForRoundaboutData = False
+        self.countForRoundaboutTimeData = False
         self.desiredJunctionRoadIndex = self.roadIndex
         self.desiredJunctionsDirectionIndex = self.directionIndex
         self.turnDirection : str = ""
@@ -158,7 +161,9 @@ class Vehicle:
     def prepare_to_enter_junction(self, road : Road, pathOptions : dict, maxSpeed: float):
         self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.turnDirection = self.draw_desired_junction_path(pathOptions)
         self.junctionTargetPositionIndex = 0
-        self.enterJunction = True 
+        self.enterJunction = True
+        if self.junctionID == 0:
+            self.timeWaitedToEnterJunction = time.time()
         road.junctions[self.junctionID].add_to_queue(self.id)
         self.set_desired_speed(maxSpeed*0.65)
     
@@ -210,13 +215,12 @@ class Vehicle:
     
     def drive_in_junction(self, road : Road, world : World, allHazards : dict) -> Vector2:
         if self.inJunction:
-            if self.shouldCountForJunctionData and self.junctionID == 0:
-                self.shouldCountForJunctionData = False
-                self.countForJunctionData = True
             nextTargetPosition = road.get_target_position_junction(self.junctionID, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.junctionTargetPositionIndex + 1)
             nextTargetPosition2 = road.get_target_position_junction(self.junctionID, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.junctionTargetPositionIndex + 2)
             endOfJunction, targetPositionIndex = road.is_end_of_junction(nextTargetPosition2, self.junctionID, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex)
             if endOfJunction:
+                if self.junctionID == 0:
+                    self.countForJunctionData = True
                 road.junctions[self.junctionID].remove_from_queue(self.id)
                 self.enterJunction = False
                 self.inJunction = False
@@ -227,6 +231,9 @@ class Vehicle:
                 self.set_desired_speed(world.maxSpeed)
         else:
             self.inJunction = self.can_enter_junction(allHazards['vehicles_front'], allHazards['vehicles_right'], allHazards['vehicles_left'], self.turnDirection, road, world.roads)
+            if self.inJunction and self.junctionID == 0:
+                self.timeWaitedToEnterJunction = time.time() - self.timeWaitedToEnterJunction
+                self.countForJunctionTimeData = True
             nextTargetPosition = road.get_target_position_junction(self.junctionID, self.directionIndex, self.desiredJunctionRoadIndex, self.desiredJunctionsDirectionIndex, self.junctionTargetPositionIndex)
             self.speed = 0 #TODO cahnge to a more gradient stop
         return nextTargetPosition
@@ -360,8 +367,8 @@ class Vehicle:
     def can_enter_roundabout(self, road : Road, vehiclesLeft : list['Vehicle'], vehiclesFront : list['Vehicle'], roundaboutId : int) -> bool:
         direction = Vector2(1, 0).rotate(-self.driveAngle)
         rightRoundaboutEnterFov = self.create_fov_boundary(direction, 10, 60, 50)
-        line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + rightRoundaboutEnterFov[0]), 1)
-        line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + rightRoundaboutEnterFov[1]), 1)
+        # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + rightRoundaboutEnterFov[0]), 1)
+        # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + rightRoundaboutEnterFov[1]), 1)
         canEnter = True
         for vehicle in vehiclesFront:
             if (vehicle.inRoundabout  or vehicle.exitingRoundabout) and roundaboutId == vehicle.roundaboutId:
@@ -385,8 +392,8 @@ class Vehicle:
         roundaboutLeftFov = self.create_fov_boundary(direction, -120, -30, 80)
         roundaboutFrontRightFov = self.create_fov_boundary(direction, -30, 45, 70)
         vehiclesInLeftToCheck = [vehicle for vehicle in vehiclesLeft if self.is_object_in_fov(vehicle.corners, roundaboutLeftFov[0], roundaboutLeftFov[1], 80)]
-        line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + roundaboutLeftFov[0]), 1)
-        line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + roundaboutLeftFov[1]), 1)
+        # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + roundaboutLeftFov[0]), 1)
+        # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + roundaboutLeftFov[1]), 1)
         vehiclesInLeftInTrafficJam = False if False in [vehicle.speed < 0.01 for vehicle in vehiclesInLeftToCheck] else True
         clearOnRightSide = False if False in [not self.is_object_in_fov(vehicle.corners, roundaboutFrontRightFov[0], roundaboutFrontRightFov[1], 70) for vehicle in vehiclesFront] else True
         return vehiclesInLeftInTrafficJam and clearOnRightSide    
@@ -852,8 +859,6 @@ class Car(Vehicle):
         averageSpeedForLane = CAR_AVG_SPEED - laneIndex * PixelsConverter.convert_speed_to_pixels_per_frames(3)
         speedCoefficient = normal(averageSpeedForLane, CAR_SPEED_STANDARD_DEVIATION)
         super().__init__(id, screen, location, speedCoefficient, roadIndex, directionIndex, laneIndex, driveAngle, image, weight=2, width=20, length=30, speed=speed)
-    
-    
     
     
     

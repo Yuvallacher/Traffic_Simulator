@@ -1,3 +1,4 @@
+from simulation.simulationManager import SimulatorManager
 from simulation.data.DataManager import DataManager
 from drawings.vehicle_drawer import VehicleDrawer
 from simulation.world.hazard import SpeedLimit
@@ -5,7 +6,6 @@ from simulation.world.hazard import StopSign
 from simulation.world.hazard import TrafficLight
 from simulation.world.hazard import Hazard
 from simulation.world.World import World
-from simulation.simulationManager import SimulatorManager
 from pygame.math import Vector2
 from gui.button import Button
 import pygame
@@ -37,6 +37,7 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
                 if hazard.nearJunction:
                     simulationWorld.roads[hazard.roadIndex].update_road_and_direction_priority(hazard.junctionID, hazard.roadIndex, hazard.directionIndex, hazard.id, False)
         if selectRoadButton.draw(simulationWorld.screen):
+            dataManager.update_stats(simulationWorld.vehiclesManager.vehicles, simulationManager.roadType, finalCall=True)
             simulationManager = SimulatorManager.select_road(simulationWorld.screen, simulationManager.filePath)
             simulationWorld, dataManager, nextStatUpdate = SimulatorManager.initialize_simulation(simulationManager)
             initiate_buttons_and_hazards(simulationManager.roadType == "junction")

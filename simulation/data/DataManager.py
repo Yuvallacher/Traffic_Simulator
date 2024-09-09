@@ -12,12 +12,13 @@ class DataManager:
         self.export_interval = export_interval
         self.roadType = roadType
         self.numOfLanes = numOfLanes
-        self.statsData = pd.DataFrame(columns=['Time Stamp', 'Average Speed', 'Density'])
+        self.statsData = pd.DataFrame(columns=['Time Stamp', 'Average Speed (km\h)', 'Density'])
         self.accidentsData = pd.DataFrame(columns=['Time Stamp', 'Vehicle Types', 'Speeds At Crash Time (km\h)', 'Accident ID'])
     
     def update_stats(self, vehicles, roadType : str, finalCall=False):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         totalSpeed, count, totalVehiclesInJunction, totalVehiclesInRoundabout = 0, 0, 0, 0
+        timeWaitedToEnterJunction = []
         roadDirectionStats = {}
 
         for vehicle in vehicles:
@@ -31,6 +32,9 @@ class DataManager:
                 if vehicle.countForRoundaboutData:
                     totalVehiclesInRoundabout += 1
                     vehicle.countForRoundaboutData = False
+                if vehicle.countForJunctionTimeData:
+                    timeWaitedToEnterJunction.append(vehicle.timeWaitedToEnterJunction)
+                    vehicle.countForJunctionTimeData = False
                 
                 key = (vehicle.roadIndex + 1, vehicle.directionIndex)
                 if key not in roadDirectionStats:
@@ -39,19 +43,22 @@ class DataManager:
                 roadDirectionStats[key]['total_speed'] += speed
                 roadDirectionStats[key]['count'] += 1
 
-        amountOfVehiclesInJunctionInGivenTime = {"Vehicle count in plus-junction in last time stamp": [totalVehiclesInJunction]} if roadType == "junction" else {}
-        amountOfVehiclesInRoundaboutInGivenTime = {"Vehicle count in roundabout in last time stamp": [totalVehiclesInRoundabout]} if roadType == "roundabout" else {}
+        amountOfVehiclesInJunctionInGivenTime = {"Vehicles passing through plus-junction": [totalVehiclesInJunction]} if roadType == "junction" else {}
+        avgTimeWaitedToEnterJunction = {"Avg. time (seconds) waited to enter junction": [sum(timeWaitedToEnterJunction) / len(timeWaitedToEnterJunction)] if len(timeWaitedToEnterJunction) != 0 else "-"}
+        avgTimeWaitedToEnterJunction = avgTimeWaitedToEnterJunction if roadType == "junction" else {}
+        amountOfVehiclesInRoundaboutInGivenTime = {"Vehicles passing through roundabout": [totalVehiclesInRoundabout]} if roadType == "roundabout" else {}
         avgSpeed = totalSpeed / count if count > 0 else 0
         avgSpeedsPerRoadDirection = {
-            f'Avg. Speed (Road {road}, Direction {direction})': (stats['total_speed'] / stats['count'] if stats['count'] > 0 else 0)
+            f'Avg. Speed (Road {road}, Direction {direction})': (stats['total_speed'] / stats['count'] if stats['count'] > 0 else "-")
             for (road, direction), stats in roadDirectionStats.items()
         }
 
         new_data = pd.DataFrame({
             'Time Stamp': [current_time],
-            'Average Speed': [avgSpeed],
+            'Average Speed (km\h)': [avgSpeed],
             'Density': [count],
             **amountOfVehiclesInJunctionInGivenTime,
+            **avgTimeWaitedToEnterJunction,
             **amountOfVehiclesInRoundaboutInGivenTime,
             **avgSpeedsPerRoadDirection 
         })
