@@ -13,9 +13,9 @@ class DataManager:
         self.roadType = roadType
         self.numOfLanes = numOfLanes
         self.statsData = pd.DataFrame(columns=['Time Stamp', 'Average Speed (km\h)', 'Density'])
-        self.accidentsData = pd.DataFrame(columns=['Time Stamp', 'Vehicle Types', 'Speeds At Crash Time (km\h)', 'Accident ID'])
+        self.accidentsData = pd.DataFrame(columns=['Time Stamp', 'Road Type', 'Vehicle Types', 'Speeds At Crash Time (km\h)', 'Accident ID'])
     
-    def update_stats(self, vehicles, roadType : str, finalCall=False):
+    def update_stats(self, vehicles, finalCall=False):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         totalSpeed, count, totalVehiclesInJunction, totalVehiclesInRoundabout = 0, 0, 0, 0
         timeWaitedToEnterJunction = []
@@ -43,10 +43,10 @@ class DataManager:
                 roadDirectionStats[key]['total_speed'] += speed
                 roadDirectionStats[key]['count'] += 1
 
-        amountOfVehiclesInJunctionInGivenTime = {"Vehicles passing through plus-junction": [totalVehiclesInJunction]} if roadType == "junction" else {}
+        amountOfVehiclesInJunctionInGivenTime = {"Vehicles passing through plus-junction": [totalVehiclesInJunction]} if self.roadType == "junction" else {}
         avgTimeWaitedToEnterJunction = {"Avg. time (seconds) waited to enter junction": [sum(timeWaitedToEnterJunction) / len(timeWaitedToEnterJunction)] if len(timeWaitedToEnterJunction) != 0 else "-"}
-        avgTimeWaitedToEnterJunction = avgTimeWaitedToEnterJunction if roadType == "junction" else {}
-        amountOfVehiclesInRoundaboutInGivenTime = {"Vehicles passing through roundabout": [totalVehiclesInRoundabout]} if roadType == "roundabout" else {}
+        avgTimeWaitedToEnterJunction = avgTimeWaitedToEnterJunction if self.roadType == "junction" else {}
+        amountOfVehiclesInRoundaboutInGivenTime = {"Vehicles passing through roundabout": [totalVehiclesInRoundabout]} if self.roadType == "roundabout" else {}
         avgSpeed = totalSpeed / count if count > 0 else 0
         avgSpeedsPerRoadDirection = {
             f'Avg. Speed (Road {road}, Direction {direction})': (stats['total_speed'] / stats['count'] if stats['count'] > 0 else "-")
@@ -76,6 +76,7 @@ class DataManager:
         speeds = "{:.2f} and {:.2f}".format(vehicle_1_Speed, vehicle_2_Speed)
         new_data = pd.DataFrame({
             'Time Stamp': [current_time],
+            'Road Type': [self.roadType],
             'Vehicle Types': [vehicle_types],
             'Speeds At Crash Time (km\h)': [speeds],
             'Accident ID': [accidentID]
@@ -90,6 +91,8 @@ class DataManager:
             book = load_workbook(self.filename)
             if sheet_name in book.sheetnames:
                 del book[sheet_name]
+            if 'Accidents' in book.sheetnames:
+                del book['Accidents']
         except FileNotFoundError:
             book = None
 
@@ -97,8 +100,7 @@ class DataManager:
             if book:
                 writer._book = book 
             self.statsData.to_excel(writer, sheet_name=sheet_name, index=False)
-            if 'Accidents' not in writer.book.sheetnames:
-                self.accidentsData.to_excel(writer, sheet_name='Accidents', index=False)
+            self.accidentsData.to_excel(writer, sheet_name='Accidents', index=False)
 
         if book is not None:
             book.save(self.filename)

@@ -30,16 +30,20 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
             pygame.event.post(pygame.event.Event(pygame.QUIT))
         if restartButton.draw(simulationWorld.screen):
             trafficLightManager = simulationWorld.trafficlightManager
+            accidentsData = dataManager.accidentsData
             simulationWorld, dataManager, nextStatUpdate = SimulatorManager.initialize_simulation(simulationManager)
+            dataManager.accidentsData = accidentsData
             simulationWorld.hazards = hazards
             simulationWorld.trafficlightManager = trafficLightManager
             for hazard in simulationWorld.hazards:
                 if hazard.nearJunction:
                     simulationWorld.roads[hazard.roadIndex].update_road_and_direction_priority(hazard.junctionID, hazard.roadIndex, hazard.directionIndex, hazard.id, False)
         if selectRoadButton.draw(simulationWorld.screen):
-            dataManager.update_stats(simulationWorld.vehiclesManager.vehicles, simulationManager.roadType, finalCall=True)
+            dataManager.update_stats(simulationWorld.vehiclesManager.vehicles, finalCall=True)
             simulationManager = SimulatorManager.select_road(simulationWorld.screen, simulationManager.filePath)
+            accidentsData = dataManager.accidentsData
             simulationWorld, dataManager, nextStatUpdate = SimulatorManager.initialize_simulation(simulationManager)
+            dataManager.accidentsData = accidentsData
             initiate_buttons_and_hazards(simulationManager.roadType == "junction")
             simulationWorld.hazards = hazards
         
@@ -60,7 +64,7 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
 
             current_time = pygame.time.get_ticks()
             if current_time >= nextStatUpdate:
-                dataManager.update_stats(simulationWorld.vehiclesManager.vehicles, simulationManager.roadType)
+                dataManager.update_stats(simulationWorld.vehiclesManager.vehicles)
                 nextStatUpdate = current_time + dataManager.export_interval * 1000
 
             delete = [key for key in simulationWorld.accidentManager.allAccidents.keys() if simulationWorld.accidentManager.allAccidents[key].check_if_3_seconds_elapsed()]
@@ -70,7 +74,7 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                dataManager.update_stats(simulationWorld.vehiclesManager.vehicles, simulationManager.roadType, finalCall=True)
+                dataManager.update_stats(simulationWorld.vehiclesManager.vehicles, finalCall=True)
                 simulationWorld.simulationRunning = False
             if event.type == pygame.KEYDOWN:
                 if selectedSign is not None and selectedSign.inputActive:
