@@ -1,3 +1,4 @@
+from calculations.vector_calculations import VecotrCalculator
 from calculations.pixels_calculations import PixelsConverter
 from simulation.data.DataManager import DataManager
 from simulation.data.Accident import Accident
@@ -245,7 +246,6 @@ class Vehicle:
     
 
     def calculate_acceleration(self, allHazards : dict, politeness : int, fps : int, road : Road) -> float:
-        # === Added ===
         isVehicleAhead, isHazardAhead = self.get_clear_road_status(allHazards['vehicle_ahead'], allHazards['hazards_ahead'])
         if not isVehicleAhead and not isHazardAhead:
             if self.stoppingPoint is not None:
@@ -360,10 +360,9 @@ class Vehicle:
         return Vector2(nextTargetPosition)
 
 
-    # === Added ===
     def can_enter_roundabout(self, road : Road, vehiclesLeft : list['Vehicle'], vehiclesFront : list['Vehicle'], roundaboutId : int) -> bool:
         direction = Vector2(1, 0).rotate(-self.driveAngle)
-        rightRoundaboutEnterFov = self.create_fov_boundary(direction, 10, 60, 50)
+        rightRoundaboutEnterFov = VecotrCalculator.create_fov_boundary(direction, 10, 60, 50)
         # ========== for debug purposes ==========#
         # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + rightRoundaboutEnterFov[0]), 1)
         # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + rightRoundaboutEnterFov[1]), 1)
@@ -372,7 +371,7 @@ class Vehicle:
             if (vehicle.inRoundabout  or vehicle.exitingRoundabout) and roundaboutId == vehicle.roundaboutId:
                 if vehicle not in vehiclesLeft:
                     if self.location.distance_to(vehicle.location) < 120:
-                        if not self.is_object_in_fov(vehicle.corners, rightRoundaboutEnterFov[0], rightRoundaboutEnterFov[1], 50):
+                        if not VecotrCalculator.is_object_in_fov(self.location, vehicle.corners, rightRoundaboutEnterFov[0], rightRoundaboutEnterFov[1], 50):
                             canEnter = False
                             self.waitingToEnterRoundabout = True
                             break
@@ -386,15 +385,16 @@ class Vehicle:
 
     def is_roundabout_in_traffic_jam(self, vehiclesLeft : list['Vehicle'], vehiclesFront : list['Vehicle'] ) ->bool:
         direction = Vector2(1, 0).rotate(-self.driveAngle)
-        roundaboutLeftFov = self.create_fov_boundary(direction, -120, -30, 80)
-        roundaboutFrontRightFov = self.create_fov_boundary(direction, -30, 45, 70)
-        vehiclesInLeftToCheck = [vehicle for vehicle in vehiclesLeft if self.is_object_in_fov(vehicle.corners, roundaboutLeftFov[0], roundaboutLeftFov[1], 80)]
+        roundaboutLeftFov = VecotrCalculator.create_fov_boundary(direction, -120, -30, 80)
+        roundaboutFrontRightFov = VecotrCalculator.create_fov_boundary(direction, -30, 45, 70)
+        vehiclesInLeftToCheck = [vehicle for vehicle in vehiclesLeft if VecotrCalculator.is_object_in_fov(self.location, vehicle.corners, roundaboutLeftFov[0], roundaboutLeftFov[1], 80)]
         # ========== for debug purposes ==========#
         # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + roundaboutLeftFov[0]), 1)
         # line(self.screen, (255, 0, 0), self.frontEdgeOfVehicle, (self.frontEdgeOfVehicle + roundaboutLeftFov[1]), 1)
         vehiclesInLeftInTrafficJam = False if False in [vehicle.speed < 0.01 for vehicle in vehiclesInLeftToCheck] else True
-        clearOnRightSide = False if False in [not self.is_object_in_fov(vehicle.corners, roundaboutFrontRightFov[0], roundaboutFrontRightFov[1], 70) for vehicle in vehiclesFront] else True
+        clearOnRightSide = False if False in [not VecotrCalculator.is_object_in_fov(self.location, vehicle.corners, roundaboutFrontRightFov[0], roundaboutFrontRightFov[1], 70) for vehicle in vehiclesFront] else True
         return vehiclesInLeftInTrafficJam and clearOnRightSide    
+    
     
     def can_enter_junction(self, frontFOV : list['Vehicle'], rightFOV : list['Vehicle'], leftFOV : list['Vehicle'], turnDirection : str, road : Road, allRoads : list[Road]) -> bool:
         """
@@ -479,6 +479,7 @@ class Vehicle:
         randomExit =  list(road.roundabouts[roundaboutId].exitPaths.keys())
         self.desiredRoadIndex, self.desiredDirectionIndex = randomExit[randomExitNumber].strip("[]").split(",")
 
+    
     def draw_desired_junction_path(self, pathOptions : dict) -> list[str, str, str]:
         directionKey = list(pathOptions.keys())
         numberOfOptions = len(directionKey)
@@ -566,7 +567,6 @@ class Vehicle:
         switchLane = False
         direction = 'left' if isLeftDirection else 'right'
         closestVehicleToSide = self.get_closest_vehicle_on_same_road(vehiclesOnSide, targetLaneIndex, direction, checkAllLanes=True)
-        distanceToVehicleInFront = self.frontEdgeOfVehicle.distance_to(vehicleAhead.backEdgeOfVehicle)
         
         if closestVehicleToSide is None:          
             switchLane = True
@@ -640,20 +640,7 @@ class Vehicle:
         self.awareness = self.awarenessCoefficient * awareness
         if self.awareness > 1:
             self.awareness = 1
-        
-    
-    def recieve_fov_lines(self, road : Road, angle1 : int, angle2 : int):
-        if not self.enterJunction:
-            targetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.targetPositionIndex)
-            if not (self.targetPositionIndex <= 1 or targetPosition == self.location):
-                direction = (self.location - targetPosition).normalize()
-                return self.create_fov_boundary(direction, angle1, angle2, 200)
-        else:
-            targetPosition = road.get_target_position(self.directionIndex, self.currentLaneIndex, self.junctionTargetPositionIndex)
-            if not (self.junctionTargetPositionIndex <= 1 or targetPosition == self.location):
-                direction = (self.location - targetPosition).normalize()
-                return self.create_fov_boundary(direction, angle1, angle2, 200)
-    
+          
     
     def get_all_hazards_around_vehicle(self, allVehicles : list['Vehicle'], road : Road, dataManager : DataManager, accidentManager : AccidentManager, hazards : list[Hazard]) -> dict:
         """
@@ -667,17 +654,17 @@ class Vehicle:
         surroundings['hazards_ahead'] = []
       
         direction = Vector2(1, 0).rotate(-self.driveAngle)
-        frontFov = self.create_fov_boundary(direction, -45, 45, 200)
+        frontFov = VecotrCalculator.create_fov_boundary(direction, -45, 45, 200)
         if self.enterJunction:
-            leftSideFov = self.create_fov_boundary(direction, -90, -20, 200)                    
-            rightSideFov = self.create_fov_boundary(direction, 20, 90, 200)
+            leftSideFov = VecotrCalculator.create_fov_boundary(direction, -90, -20, 200)                    
+            rightSideFov = VecotrCalculator.create_fov_boundary(direction, 20, 90, 200)
         else:
-            leftSideFov = self.create_fov_boundary(direction, -170, -20, 200)                    
-            rightSideFov = self.create_fov_boundary(direction, 20, 170, 200)
+            leftSideFov = VecotrCalculator.create_fov_boundary(direction, -170, -20, 200)                    
+            rightSideFov = VecotrCalculator.create_fov_boundary(direction, 20, 170, 200)
 
         if self.stoppingPoint is not None and self.enteringRoundabout:
-            leftSideFov = self.create_fov_boundary(direction, -100, -20, 170)
-            frontFov = self.create_fov_boundary(direction, -45, 20, 170)
+            leftSideFov = VecotrCalculator.create_fov_boundary(direction, -100, -20, 170)
+            frontFov = VecotrCalculator.create_fov_boundary(direction, -45, 20, 170)
 
         for otherVehicle in allVehicles:
             if self.id != otherVehicle.id:
@@ -685,11 +672,11 @@ class Vehicle:
                     if not (self.inAccident and otherVehicle.inAccident):
                         self.handle_accident(otherVehicle, dataManager, accidentManager)
                     return surroundings
-                if self.is_object_in_fov(otherVehicle.corners, frontFov[0], frontFov[1], 200):
+                if VecotrCalculator.is_object_in_fov(self.location, otherVehicle.corners, frontFov[0], frontFov[1], 200):
                     surroundings['vehicles_front'].append(otherVehicle)
-                if self.is_object_in_fov(otherVehicle.corners, leftSideFov[0], leftSideFov[1], 200):
+                if VecotrCalculator.is_object_in_fov(self.location, otherVehicle.corners, leftSideFov[0], leftSideFov[1], 200):
                     surroundings['vehicles_left'].append(otherVehicle)
-                if self.is_object_in_fov(otherVehicle.corners, rightSideFov[0], rightSideFov[1], 200):
+                if VecotrCalculator.is_object_in_fov(self.location, otherVehicle.corners, rightSideFov[0], rightSideFov[1], 200):
                     surroundings['vehicles_right'].append(otherVehicle)
         
         # ========== for debug purposes ==========#
@@ -718,7 +705,7 @@ class Vehicle:
                 (rect.left, rect.bottom),  # Bottom-left corner
                 (rect.right, rect.bottom)  # Bottom-right corner
             ]
-            if self.is_object_in_fov(hazardCorners, frontFov[0], frontFov[1], 150):
+            if VecotrCalculator.is_object_in_fov(self.location, hazardCorners, frontFov[0], frontFov[1], 150):
                 if self.roadIndex == hazard.roadIndex and self.directionIndex == hazard.directionIndex:
                     if hazard.id not in self.completedHazards.keys() or self.completedHazards[hazard.id] == False:
                         surroundings['hazards_ahead'].append(hazard)       

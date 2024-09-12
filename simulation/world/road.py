@@ -235,6 +235,7 @@ class Road:
             self.exitPaths = exitPaths
             self.id = id
 
+
 class RoadBuilder:
     @staticmethod
     def create_road(roadName : str, startingNumberOfLanes=2) -> list[Road]:
@@ -244,10 +245,9 @@ class RoadBuilder:
             roads = RoadBuilder.junction_road_read_lanes_from_file(startingNumberOfLanes, roadName)
         elif 'roundabout' in roadName:
             roads = RoadBuilder.roundabout_road_read_lanes_from_file(startingNumberOfLanes, roadName)    
-        
-     
         return roads
         
+    
     @staticmethod
     def straight_road_read_lanes_from_file(startingNumberOfLanes : int) -> list[Road]:
         with open("jsons\\road.json", 'r') as file:
@@ -276,7 +276,6 @@ class RoadBuilder:
             return roadsList
     
     
-
     @staticmethod
     def load_lane_images(roadData : dict) -> list[list]:
         imagesPaths = roadData["images_path"]

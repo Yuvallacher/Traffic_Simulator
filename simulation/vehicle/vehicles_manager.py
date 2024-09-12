@@ -64,8 +64,8 @@ class VehiclesManager:
             vehicleRoad = simulationWorld.get_vehicle_road(vehicle.roadIndex)
             vehicle.drive(self.vehicles, simulationWorld, dataManager, accidentManager, vehicleRoad)
 
+    
     def remove_vehicles(self, roads : list[Road]):
-
         for vehicle in self.vehicles:
             roadIndex = vehicle.roadIndex
             directionIndex = vehicle.directionIndex
