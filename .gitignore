@@ -160,3 +160,4 @@ cython_debug/
 #.idea/
 run.vbs
 run.bat
+readme.pdf

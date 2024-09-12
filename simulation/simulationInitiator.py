@@ -8,7 +8,7 @@ import tkinter as tk
 import pygame
 import sys
 
-class SimulatorManager():
+class SimulatorInitiator():
     def __init__(self, roadType : str, numOfLanes : int, maxSpeed : float, filePath : str, roadDensities : dict, truckPercentage : float):
         self.roadType = roadType
         self.numOfLanes = numOfLanes
@@ -19,7 +19,7 @@ class SimulatorManager():
 
 
     @staticmethod
-    def select_road(screen, previousFilePath: str = None) -> 'SimulatorManager':
+    def select_road(screen, previousFilePath: str = None) -> 'SimulatorInitiator':
         root = tk.Tk()
         root.withdraw()
         chooseFileButton = Button(600, 300, pygame.image.load("pictures\\buttonPictures\\folderIcon.png").convert_alpha(), 0.1)
@@ -120,7 +120,7 @@ class SimulatorManager():
                             densities[roadNum] = int(density)
 
                         if not errorMessage:
-                            return SimulatorManager(
+                            return SimulatorInitiator(
                                 roadTypes[selectedRoadIndex], 
                                 int(numOfLanes), 
                                 float(maxSpeed), 
@@ -157,12 +157,12 @@ class SimulatorManager():
                 
 
     @staticmethod
-    def initialize_simulation(simulationManager : 'SimulatorManager') -> list[World, DataManager, int]:
-        simulationWorld = World(simulationManager.roadType, simulationManager.numOfLanes, simulationManager.maxSpeed)
+    def initialize_simulation(simulationInitiator : 'SimulatorInitiator') -> list[World, DataManager, int]:
+        simulationWorld = World(simulationInitiator.roadType, simulationInitiator.numOfLanes, simulationInitiator.maxSpeed)
         for roadIndex, road in enumerate(simulationWorld.roads):
-            road.density = simulationManager.roadDensities[roadIndex + 1] * 2
-        simulationWorld.set_vehicles_manager(VehiclesManager(simulationWorld.NUMBER_OF_CARS, simulationManager.truckPercentage))
-        dataManager = DataManager(simulationManager.filePath, 5, simulationManager.roadType, simulationManager.numOfLanes)
+            road.density = simulationInitiator.roadDensities[roadIndex + 1] * 2
+        simulationWorld.set_vehicles_manager(VehiclesManager(simulationWorld.NUMBER_OF_CARS, simulationInitiator.truckPercentage))
+        dataManager = DataManager(simulationInitiator.filePath, 5, simulationInitiator.roadType, simulationInitiator.numOfLanes)
         nextStatUpdate = pygame.time.get_ticks() + dataManager.export_interval * 1000
         
         return simulationWorld, dataManager, nextStatUpdate

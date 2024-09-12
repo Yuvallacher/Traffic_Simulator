@@ -1,4 +1,4 @@
-from simulation.simulationManager import SimulatorManager
+from simulation.simulationInitiator import SimulatorInitiator
 from simulation.data.DataManager import DataManager
 from drawings.vehicle_drawer import VehicleDrawer
 from simulation.world.hazard import SpeedLimit
@@ -12,7 +12,7 @@ import pygame
 import sys
 import os
 
-def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dataManager : DataManager, nextStatUpdate : int):
+def main_loop(simulationInitiator : SimulatorInitiator, simulationWorld : World, dataManager : DataManager, nextStatUpdate : int):
     global selectRoadButton, restartButton, pauseButton, playButton, exitButton
     global hazards
     activeSign = None
@@ -31,7 +31,7 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
         if restartButton.draw(simulationWorld.screen):
             trafficLightManager = simulationWorld.trafficlightManager
             accidentsData = dataManager.accidentsData
-            simulationWorld, dataManager, nextStatUpdate = SimulatorManager.initialize_simulation(simulationManager)
+            simulationWorld, dataManager, nextStatUpdate = SimulatorInitiator.initialize_simulation(simulationInitiator)
             dataManager.accidentsData = accidentsData
             simulationWorld.hazards = hazards
             simulationWorld.trafficlightManager = trafficLightManager
@@ -40,11 +40,11 @@ def main_loop(simulationManager : SimulatorManager, simulationWorld : World, dat
                     simulationWorld.roads[hazard.roadIndex].update_road_and_direction_priority(hazard.junctionID, hazard.roadIndex, hazard.directionIndex, hazard.id, False)
         if selectRoadButton.draw(simulationWorld.screen):
             dataManager.update_stats(simulationWorld.vehiclesManager.vehicles, finalCall=True)
-            simulationManager = SimulatorManager.select_road(simulationWorld.screen, simulationManager.filePath)
+            simulationInitiator = SimulatorInitiator.select_road(simulationWorld.screen, simulationInitiator.filePath)
             accidentsData = dataManager.accidentsData
-            simulationWorld, dataManager, nextStatUpdate = SimulatorManager.initialize_simulation(simulationManager)
+            simulationWorld, dataManager, nextStatUpdate = SimulatorInitiator.initialize_simulation(simulationInitiator)
             dataManager.accidentsData = accidentsData
-            initiate_buttons_and_hazards(simulationManager.roadType == "junction")
+            initiate_buttons_and_hazards(simulationInitiator.roadType == "junction")
             simulationWorld.hazards = hazards
         
         VehicleDrawer.draw_vehicles(simulationWorld.vehiclesManager.vehicles, simulationWorld.screen)
@@ -196,9 +196,9 @@ if __name__ == "__main__":
     pygame.init()
     screen = pygame.display.set_mode((1280, 720))
     pygame.display.set_caption("Traffic Simulator")
-    simulatorManager = SimulatorManager.select_road(screen)
+    simulatorManager = SimulatorInitiator.select_road(screen)
     initiate_buttons_and_hazards(simulatorManager.roadType == "junction")
-    simulationWorld, dataManager, nextStatUpdate = SimulatorManager.initialize_simulation(simulatorManager)
+    simulationWorld, dataManager, nextStatUpdate = SimulatorInitiator.initialize_simulation(simulatorManager)
     global hazards
     simulationWorld.hazards = hazards
     if os.path.exists(dataManager.filename):
